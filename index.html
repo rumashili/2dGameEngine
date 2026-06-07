@@ -8,34 +8,106 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Monaco Editor (VSCodeと同じ高性能エディタ) を使って贅沢に仕上げるよ -->
+  <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
   <style>
-    /* エディタとプレビューの高さ調整 */
-    .editor-container {
-      height: calc(100vh - 48px);
-    }
-    /* スクロールバーのカスタマイズ */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #475569;
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #64748b;
-    }
+    .editor-container { height: calc(100vh - 48px); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    /* ドキュメント内のコードブロック用装飾 */
+    .doc-code { background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; color: #38bdf8; display: inline-block; margin-bottom: 2px;}
   </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans h-screen flex flex-col overflow-hidden select-none">
 
   <!-- 隠しファイル入力 -->
   <input type="file" id="file-input" class="hidden">
+
+  <!-- APIドキュメント・モーダル -->
+  <div id="api-doc-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 sm:p-8 transition-opacity">
+    <div class="bg-slate-800 rounded-xl w-full max-w-4xl h-full max-h-[85vh] flex flex-col border border-slate-600 shadow-2xl overflow-hidden">
+      <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center shrink-0">
+        <h2 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
+          <i class="fas fa-book-open"></i> API リファレンス
+        </h2>
+        <button id="btn-close-doc" class="text-slate-400 hover:text-white transition-colors bg-slate-700 hover:bg-slate-600 rounded-full w-8 h-8 flex items-center justify-center">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 space-y-8 text-sm text-slate-300 leading-relaxed select-text">
+        
+        <!-- セクション: 基本構造 -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🎮 基本構造 (ライフサイクル)</h3>
+          <ul class="space-y-3">
+            <li>
+              <span class="doc-code">Engine.setInit( ( ) => { ... } )</span><br>
+              ゲームの実行開始時に <strong class="text-emerald-300">1回だけ</strong> 呼ばれる関数を登録するよ。変数の初期化などに使ってね。
+            </li>
+            <li>
+              <span class="doc-code">Engine.setUpdate( (dt) => { ... } )</span><br>
+              毎フレーム（1秒間に約60回）呼ばれるループ処理だよ。<span class="doc-code">dt</span> は前回のフレームからの経過時間（秒）が入るから、移動速度を掛けると滑らかに動くよ。
+            </li>
+          </ul>
+        </section>
+
+        <!-- セクション: 描画・UI -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🖌️ 描画・UI (Draw)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.clear(color)</span> : 画面全体を指定した色（例: '#000'）で塗りつぶしてクリアするよ。</li>
+            <li><span class="doc-code">Engine.draw(name, x, y, width, height, angle)</span> : アップロードしたコスチュームを描画するよ。</li>
+            <li><span class="doc-code">Engine.drawRect(x, y, w, h, color, fill)</span> : 四角形を描くよ。<span class="doc-code">fill</span> を false にすると枠線だけになるよ。</li>
+            <li><span class="doc-code">Engine.drawCircle(x, y, radius, color, fill)</span> : 円を描くよ。</li>
+            <li><span class="doc-code">Engine.drawText(text, x, y, size, color)</span> : 文字や絵文字を描画するよ。</li>
+            <li>
+              <span class="doc-code">Engine.drawTextBox(text, x, y, w, h, options)</span><br>
+              自動で改行される本格的なテキストボックス（会話ウィンドウ）を描くよ。<br>
+              <span class="text-xs text-slate-400">options例: { fontSize: 20, fontColor: '#fff', bgColor: 'rgba(0,0,0,0.8)', borderColor: '#fff', padding: 10 }</span>
+            </li>
+          </ul>
+        </section>
+
+        <!-- セクション: 入力 -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">⌨️ 入力 (Input)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.Input.getKey('KeyName')</span> : キーが <strong class="text-emerald-300">押されている間ずっと</strong> true を返すよ。（例: 'ArrowRight', 'Space'）</li>
+            <li><span class="doc-code">Engine.Input.getKeyDown('KeyName')</span> : キーが <strong class="text-emerald-300">押された瞬間だけ</strong> true を返すよ。</li>
+            <li><span class="doc-code">Engine.Input.getMouse()</span> : マウスの情報を <span class="doc-code">{ x, y, isDown }</span> のオブジェクトで返すよ。</li>
+            <li><span class="doc-code">Engine.Input.getMouseDown()</span> : マウスがクリックされた瞬間だけ true を返すよ。</li>
+          </ul>
+        </section>
+
+        <!-- セクション: 当たり判定 -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">💥 当たり判定 (Collision)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.Math.Collision.rectRect(x1, y1, w1, h1, x2, y2, w2, h2)</span> : 2つの四角形が重なっているか判定するよ。</li>
+            <li><span class="doc-code">Engine.Math.Collision.circleCircle(x1, y1, r1, x2, y2, r2)</span> : 2つの円が重なっているか判定するよ。</li>
+            <li><span class="doc-code">Engine.Math.Collision.rectCircle(rx, ry, rw, rh, cx, cy, cr)</span> : 四角形と円が重なっているか判定するよ。アクションゲームで大活躍！</li>
+            <li><span class="doc-code">Engine.Math.Collision.pointRect(px, py, rx, ry, rw, rh)</span> : 点（マウスカーソルなど）が四角形の中に入っているか判定するよ。ボタンを作る時に便利！</li>
+          </ul>
+        </section>
+
+        <!-- セクション: 便利ツール・数学 -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🧮 便利ツール・数学 (Math & Util)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.Math.random(min, max)</span> : minからmaxまでの間のランダムな小数を返すよ。</li>
+            <li><span class="doc-code">Engine.Math.lerp(a, b, t)</span> : aからbへ、tの割合(0.0〜1.0)で滑らかに変化する値を計算するよ。カメラの追従などに便利！</li>
+            <li><span class="doc-code">Engine.Math.clamp(val, min, max)</span> : valをminとmaxの間に収めるよ（画面端から出ないようにする時など）。</li>
+            <li><span class="doc-code">Engine.Math.moveForward(x, y, angle, distance)</span> : 今の座標から指定した角度(度数)の方向へ進んだ新しい座標 <span class="doc-code">{x, y}</span> を返すよ。</li>
+            <li><span class="doc-code">Engine.play(name, volume, loop)</span> : アップロードした音声を再生するよ。</li>
+            <li><span class="doc-code">Engine.log(msg)</span> : エディタ右下のコンソールにメッセージを出力するよ。</li>
+          </ul>
+        </section>
+
+      </div>
+    </div>
+  </div>
 
   <!-- メインコンテナ -->
   <div class="flex flex-1 h-full w-full overflow-hidden">
@@ -56,9 +128,7 @@
               <i class="fas fa-plus"></i>
             </button>
           </div>
-          <div id="scripts-list" class="space-y-1">
-            <!-- 動的に追加されます -->
-          </div>
+          <div id="scripts-list" class="space-y-1"></div>
         </div>
 
         <!-- コスチューム -->
@@ -69,9 +139,7 @@
               <i class="fas fa-plus"></i>
             </button>
           </div>
-          <div id="costumes-list" class="space-y-1">
-            <!-- 動的に追加されます -->
-          </div>
+          <div id="costumes-list" class="space-y-1"></div>
         </div>
 
         <!-- サウンド -->
@@ -82,9 +150,7 @@
               <i class="fas fa-plus"></i>
             </button>
           </div>
-          <div id="sounds-list" class="space-y-1">
-            <!-- 動的に追加されます -->
-          </div>
+          <div id="sounds-list" class="space-y-1"></div>
         </div>
       </div>
     </div>
@@ -95,7 +161,12 @@
         <div id="editor-title" class="flex items-center">
           <!-- 選択中のファイル名 -->
         </div>
-        <div class="text-xs text-slate-400">Ctrl+S / Cmd+S で保存</div>
+        <div class="flex items-center gap-4">
+          <div class="text-xs text-slate-400 hidden sm:block">Ctrl+S / Cmd+S で保存</div>
+          <button id="btn-open-doc" class="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded transition-colors text-xs font-bold">
+            <i class="fas fa-book"></i> ドキュメント
+          </button>
+        </div>
       </div>
       
       <!-- エディタ表示領域 -->
@@ -108,7 +179,7 @@
     </div>
 
     <!-- --- 右ペイン：プレビュー＆コンソール --- -->
-    <div class="w-[450px] bg-slate-950 flex flex-col border-l border-slate-800">
+    <div class="w-[450px] bg-slate-950 flex flex-col border-l border-slate-800 shrink-0">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900">
         <span class="font-bold text-sm text-slate-300">Preview</span>
         <div class="flex gap-2">
@@ -146,44 +217,97 @@
 
   <!-- --- アプリケーションロジック --- -->
   <script>
-    // 初期状態のゲームスクリプト
-    const initialCode = `// プレイヤーの初期設定
-let x = 400;
-let y = 300;
-let angle = 0;
+    // --- ドキュメントの開閉ロジック ---
+    const apiDocModal = document.getElementById('api-doc-modal');
+    document.getElementById('btn-open-doc').addEventListener('click', () => {
+      apiDocModal.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-doc').addEventListener('click', () => {
+      apiDocModal.classList.add('hidden');
+    });
+    // モーダルの背景クリックで閉じる
+    apiDocModal.addEventListener('click', (e) => {
+      if(e.target === apiDocModal) apiDocModal.classList.add('hidden');
+    });
 
-// 毎フレーム実行されるループ関数を設定
+    // --- 初期状態のゲームスクリプト (新機能を使ったサンプルに更新!) ---
+    const initialCode = `// 状態を管理する変数
+let player = { x: 400, y: 300, w: 64, h: 64 };
+let enemyCircle = { x: 200, y: 200, r: 40 };
+let score = 0;
+let showDialogue = true;
+
+// 【1】 起動時に1回だけ呼ばれる初期化処理
+Engine.setInit(() => {
+  Engine.log("新機能のデモを開始するよ！🚀");
+});
+
+// 【2】 毎フレーム呼ばれる更新処理
 Engine.setUpdate((dt) => {
-  // 背景を指定した色で塗りつぶすよ
+  // 背景をクリア
   Engine.clear('#1e293b');
 
-  // キーボード入力による移動処理
+  // マウスの情報を取得
+  const mouse = Engine.Input.getMouse();
+
+  // プレイヤーの移動処理（矢印キー）
   const speed = 300 * dt;
-  if (Engine.Input.getKey('ArrowRight')) x += speed;
-  if (Engine.Input.getKey('ArrowLeft')) x -= speed;
-  if (Engine.Input.getKey('ArrowUp')) y -= speed;
-  if (Engine.Input.getKey('ArrowDown')) y += speed;
+  if (Engine.Input.getKey('ArrowRight')) player.x += speed;
+  if (Engine.Input.getKey('ArrowLeft')) player.x -= speed;
+  if (Engine.Input.getKey('ArrowUp')) player.y -= speed;
+  if (Engine.Input.getKey('ArrowDown')) player.y += speed;
 
-  // コスチューム「player」がアップロードされていたら、それを描画
-  if (Engine.hasCostume('player')) {
-    angle += 45 * dt; // くるくる回すよ
-    Engine.draw('player', x - 32, y - 32, 64, 64, angle);
-  } else {
-    // なければ代わりにロケットの絵文字を表示！
-    Engine.drawText('🚀', x - 25, y + 15, 50);
-  }
+  // 画面端から出ないように clamp で制限するよ！
+  player.x = Engine.Math.clamp(player.x, 0, 800 - player.w);
+  player.y = Engine.Math.clamp(player.y, 0, 600 - player.h);
 
-  // 操作ガイドの表示
-  Engine.drawText('Arrow keys to move', 20, 40, 20, '#94a3b8');
-  Engine.drawText('Click canvas to play sound', 20, 70, 16, '#64748b');
+  // 敵（円）は lerp を使ってマウスカーソルに滑らかに追従させるよ！
+  enemyCircle.x = Engine.Math.lerp(enemyCircle.x, mouse.x, 0.05);
+  enemyCircle.y = Engine.Math.lerp(enemyCircle.y, mouse.y, 0.05);
+
+  // --- 💥 ここから新機能の当たり判定テスト ---
   
-  // マウスがクリックされた時の音鳴らし
-  if (Engine.Input.getMouse().isDown) {
-    if (Engine.hasSound('jump')) {
-      Engine.play('jump');
-    }
-    Engine.drawText('Click!', Engine.Input.getMouse().x, Engine.Input.getMouse().y, 24, '#facc15');
+  // プレイヤー(四角) と 敵(円) が当たっているか判定
+  let isColliding = Engine.Math.Collision.rectCircle(
+    player.x, player.y, player.w, player.h,
+    enemyCircle.x, enemyCircle.y, enemyCircle.r
+  );
+
+  // 敵の描画（当たっていたら赤色になるよ！）
+  Engine.drawCircle(enemyCircle.x, enemyCircle.y, enemyCircle.r, isColliding ? '#ef4444' : '#8b5cf6');
+
+  // プレイヤーの描画
+  if (Engine.hasCostume('player')) {
+    Engine.draw('player', player.x, player.y, player.w, player.h);
+  } else {
+    Engine.drawRect(player.x, player.y, player.w, player.h, '#38bdf8');
+    Engine.drawText('🚀', player.x + 8, player.y + 40, 40);
   }
+
+  // --- 💬 新機能のテキストボックス描画 ---
+  if (showDialogue) {
+    // 長い文章も自動で折り返して、立派な枠付きで表示できるよ！
+    Engine.drawTextBox(
+      "こんにちは！新しい機能が追加されたよ。\\n・四角と円の当たり判定 (Collision)\\n・自動改行付きテキストボックス\\n・滑らかな追従 (lerp) などを試してみてね！\\n※Enterキーで閉じるよ。",
+      50, 400, 700, 150,
+      {
+        fontSize: 22,
+        fontColor: '#f8fafc',
+        bgColor: 'rgba(15, 23, 42, 0.85)',
+        borderColor: '#38bdf8',
+        borderWidth: 3,
+        padding: 20
+      }
+    );
+
+    // Enterキーを押した瞬間、ダイアログを消す
+    if (Engine.Input.getKeyDown('Enter')) {
+      showDialogue = false;
+    }
+  }
+
+  // UIの表示
+  Engine.drawText('Arrow keys: Move / Mouse: Target', 20, 40, 16, '#94a3b8');
 });`;
 
     // プロジェクトデータ管理
@@ -213,13 +337,10 @@ Engine.setUpdate((dt) => {
         minimap: { enabled: false }
       });
 
-      // エディタの値が変更されたら保存
       editor.onDidChangeModelContent(() => {
         if (activeFile.type === 'script') {
           const script = project.scripts.find(s => s.id === activeFile.id);
-          if (script) {
-            script.content = editor.getValue();
-          }
+          if (script) script.content = editor.getValue();
         }
       });
     });
@@ -227,9 +348,7 @@ Engine.setUpdate((dt) => {
     // ログ表示
     const consoleLogs = document.getElementById('console-logs');
     function addLog(msg, type = 'info') {
-      if (consoleLogs.innerHTML.includes('No logs yet...')) {
-        consoleLogs.innerHTML = '';
-      }
+      if (consoleLogs.innerHTML.includes('No logs yet...')) consoleLogs.innerHTML = '';
       const div = document.createElement('div');
       const time = new Date().toLocaleTimeString();
       div.className = `py-0.5 ${type === 'error' ? 'text-rose-400' : type === 'success' ? 'text-emerald-400' : 'text-slate-300'}`;
@@ -297,7 +416,6 @@ Engine.setUpdate((dt) => {
       });
     }
 
-    // ファイル選択処理
     window.selectFile = function(type, id) {
       activeFile = { type, id };
       renderTree();
@@ -310,9 +428,7 @@ Engine.setUpdate((dt) => {
         editorEl.classList.remove('hidden');
         previewEl.classList.add('hidden');
         const script = project.scripts.find(s => s.id === id);
-        if (script && editor) {
-          editor.setValue(script.content);
-        }
+        if (script && editor) editor.setValue(script.content);
         titleEl.innerHTML = `<i class="fab fa-js text-yellow-400 mr-2"></i> ${script.name}.js`;
       } else if (type === 'costume') {
         editorEl.classList.add('hidden');
@@ -321,7 +437,6 @@ Engine.setUpdate((dt) => {
         titleEl.innerHTML = `<i class="fas fa-image text-purple-400 mr-2"></i> ${costume.name}`;
         previewEl.innerHTML = `
           <img src="${costume.src}" alt="${costume.name}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">
-          <span class="text-xs text-slate-400">解像度: 自動検出中</span>
         `;
       } else if (type === 'sound') {
         editorEl.classList.add('hidden');
@@ -337,94 +452,67 @@ Engine.setUpdate((dt) => {
       }
     };
 
-    // ファイル削除
     window.deleteFile = function(type, id) {
-      if (type === 'script') {
-        project.scripts = project.scripts.filter(s => s.id !== id);
-      } else if (type === 'costume') {
-        project.costumes = project.costumes.filter(c => c.id !== id);
-      } else if (type === 'sound') {
-        project.sounds = project.sounds.filter(s => s.id !== id);
-      }
+      if (type === 'script') project.scripts = project.scripts.filter(s => s.id !== id);
+      else if (type === 'costume') project.costumes = project.costumes.filter(c => c.id !== id);
+      else if (type === 'sound') project.sounds = project.sounds.filter(s => s.id !== id);
 
-      // 削除したファイルがアクティブだった場合はメインに切り替え
-      if (activeFile.id === id) {
-        selectFile('script', 'main');
-      } else {
-        renderTree();
-      }
+      if (activeFile.id === id) selectFile('script', 'main');
+      else renderTree();
     };
 
-    // 新規スクリプト作成
     document.getElementById('btn-add-script').addEventListener('click', () => {
       const name = prompt("スクリプト名を入力してください (英数字):", `actor_${project.scripts.length + 1}`);
       if (!name) return;
       const cleanName = name.replace(/[^a-zA-Z0-9_]/g, '');
       const id = 'script_' + Date.now();
-      project.scripts.push({
-        id,
-        name: cleanName,
-        content: `// ${cleanName} の行動処理\n`
-      });
+      project.scripts.push({ id, name: cleanName, content: `// ${cleanName} の行動処理\n` });
       selectFile('script', id);
     });
 
-    // コスチュームとサウンドのアップロード
     const fileInput = document.getElementById('file-input');
     let uploadTarget = 'costume';
 
     document.getElementById('btn-add-costume').addEventListener('click', () => {
-      uploadTarget = 'costume';
-      fileInput.accept = 'image/*';
-      fileInput.click();
+      uploadTarget = 'costume'; fileInput.accept = 'image/*'; fileInput.click();
     });
-
     document.getElementById('btn-add-sound').addEventListener('click', () => {
-      uploadTarget = 'sound';
-      fileInput.accept = 'audio/*';
-      fileInput.click();
+      uploadTarget = 'sound'; fileInput.accept = 'audio/*'; fileInput.click();
     });
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (event) => {
         const src = event.target.result;
         const name = file.name.split('.')[0].replace(/[^a-zA-Z0-9_]/g, '');
         const id = 'asset_' + Date.now();
-
         if (uploadTarget === 'costume') {
           project.costumes.push({ id, name, src });
-          addLog(`コスチューム「${name}」をアップロードしました。`, 'success');
+          addLog(`コスチューム「${name}」を追加したよ。`, 'success');
         } else {
           project.sounds.push({ id, name, src });
-          addLog(`サウンド「${name}」をアップロードしました。`, 'success');
+          addLog(`サウンド「${name}」を追加したよ。`, 'success');
         }
         renderTree();
       };
       reader.readAsDataURL(file);
+      e.target.value = ''; // リセット
     });
 
     // --- ゲームエンジンの実行制御 ---
     const btnRun = document.getElementById('btn-run');
     const btnStop = document.getElementById('btn-stop');
 
-    btnRun.addEventListener('click', () => {
-      startGameEngine();
-    });
-
-    btnStop.addEventListener('click', () => {
-      stopGameEngine();
-    });
+    btnRun.addEventListener('click', startGameEngine);
+    btnStop.addEventListener('click', stopGameEngine);
 
     function stopGameEngine() {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
-
       if (activeEngineHandlers) {
         window.removeEventListener('keydown', activeEngineHandlers.keydown);
         window.removeEventListener('keyup', activeEngineHandlers.keyup);
@@ -434,11 +522,10 @@ Engine.setUpdate((dt) => {
         canvas.removeEventListener('mousemove', activeEngineHandlers.mousemove);
         activeEngineHandlers = null;
       }
-
       isRunning = false;
       btnRun.classList.remove('hidden');
       btnStop.classList.add('hidden');
-      addLog('ゲームを停止しました。');
+      addLog('ゲームを停止したよ。');
     }
 
     async function startGameEngine() {
@@ -448,30 +535,25 @@ Engine.setUpdate((dt) => {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
 
-      // コスチューム画像のキャッシュロード
       const loadedImages = {};
       for (const costume of project.costumes) {
         const img = new Image();
         img.src = costume.src;
         await new Promise((resolve) => {
           img.onload = () => resolve();
-          img.onerror = () => {
-            addLog(`画像の読み込みに失敗しました: ${costume.name}`, 'error');
-            resolve();
-          };
+          img.onerror = () => { addLog(`画像の読み込み失敗: ${costume.name}`, 'error'); resolve(); };
         });
         loadedImages[costume.name] = img;
       }
 
-      // サウンドのプール
       const loadedSounds = {};
-      for (const sound of project.sounds) {
-        loadedSounds[sound.name] = sound.src; // DataURLをストック
-      }
+      for (const sound of project.sounds) loadedSounds[sound.name] = sound.src;
 
-      // 入力デバイス管理
+      // 入力状態の管理（現在と1フレーム前）
       const keys = {};
+      const prevKeys = {};
       const mouse = { x: 0, y: 0, isDown: false };
+      const prevMouse = { isDown: false };
 
       const keydownHandler = (e) => { keys[e.code] = true; };
       const keyupHandler = (e) => { keys[e.code] = false; };
@@ -491,74 +573,206 @@ Engine.setUpdate((dt) => {
       canvas.addEventListener('mouseup', mouseupHandler);
       canvas.addEventListener('mousemove', mousemoveHandler);
 
-      activeEngineHandlers = {
-        keydown: keydownHandler,
-        keyup: keyupHandler,
-        mousedown: mousedownHandler,
-        mouseup: mouseupHandler,
-        mousemove: mousemoveHandler
-      };
+      activeEngineHandlers = { keydown: keydownHandler, keyup: keyupHandler, mousedown: mousedownHandler, mouseup: mouseupHandler, mousemove: mousemoveHandler };
 
+      let userInit = null;
       let userUpdate = null;
 
-      // ユーザーに見せるAPI構造体の構築
+      // --- 拡張された API 構造体 ---
       const Engine = {
+        setInit: (fn) => { userInit = fn; },
+        setUpdate: (fn) => { userUpdate = fn; },
+        
         clear: (color = '#000') => {
           ctx.fillStyle = color;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         },
         hasCostume: (name) => !!loadedImages[name],
         hasSound: (name) => !!loadedSounds[name],
+        
+        // --- 基本描画API ---
         draw: (name, x, y, width, height, angle = 0) => {
           const img = loadedImages[name];
           if (!img) return;
           ctx.save();
-          // 指定座標を基準に回転
           ctx.translate(x + width / 2, y + height / 2);
           ctx.rotate((angle * Math.PI) / 180);
           ctx.drawImage(img, -width / 2, -height / 2, width, height);
           ctx.restore();
+        },
+        drawRect: (x, y, w, h, color = '#fff', fill = true) => {
+          ctx.fillStyle = color;
+          ctx.strokeStyle = color;
+          if (fill) ctx.fillRect(x, y, w, h);
+          else ctx.strokeRect(x, y, w, h);
+        },
+        drawCircle: (x, y, r, color = '#fff', fill = true) => {
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.strokeStyle = color;
+          if (fill) ctx.fill();
+          else ctx.stroke();
         },
         drawText: (text, x, y, size = 20, color = '#fff') => {
           ctx.fillStyle = color;
           ctx.font = `bold ${size}px "Segoe UI", sans-serif`;
           ctx.fillText(text, x, y);
         },
+
+        // --- 🎉 新機能: 本格的なテキストボックス（会話ウィンドウ）描画 ---
+        drawTextBox: (text, x, y, width, height, options = {}) => {
+          const {
+            fontSize = 20, fontColor = '#fff',
+            bgColor = 'rgba(0, 0, 0, 0.8)', borderColor = '#fff', borderWidth = 2,
+            padding = 10, lineHeight = 1.5
+          } = options;
+
+          // 背景と枠線の描画
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(x, y, width, height);
+          if (borderWidth > 0) {
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = borderWidth;
+            ctx.strokeRect(x, y, width, height);
+          }
+
+          // 文字の描画設定
+          ctx.fillStyle = fontColor;
+          ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+          ctx.textBaseline = 'top';
+
+          // 折り返し処理
+          const maxTextWidth = width - padding * 2;
+          let currentY = y + padding;
+          
+          // \nで明示的に改行された部分を分割
+          const lines = text.split('\n');
+
+          for (const paragraph of lines) {
+            let currentLine = '';
+            for (const char of paragraph) {
+              const testLine = currentLine + char;
+              const metrics = ctx.measureText(testLine);
+              if (metrics.width > maxTextWidth && currentLine !== '') {
+                ctx.fillText(currentLine, x + padding, currentY);
+                currentLine = char;
+                currentY += fontSize * lineHeight;
+              } else {
+                currentLine = testLine;
+              }
+            }
+            // 最後の行を描画
+            ctx.fillText(currentLine, x + padding, currentY);
+            currentY += fontSize * lineHeight;
+          }
+        },
+        
         play: (name, volume = 1.0, loop = false) => {
           const src = loadedSounds[name];
           if (!src) return;
           const audio = new Audio(src);
           audio.volume = volume;
           audio.loop = loop;
-          audio.play().catch(err => {
-            // 自動再生ポリシーなどのエラーハンドリング
-          });
+          audio.play().catch(err => {});
         },
-        setUpdate: (fn) => { userUpdate = fn; },
+        
         Input: {
           getKey: (code) => !!keys[code],
-          getMouse: () => ({ ...mouse })
+          getKeyDown: (code) => !!(keys[code] && !prevKeys[code]),
+          getKeyUp: (code) => !!(!keys[code] && prevKeys[code]),
+          getMouse: () => ({ ...mouse }),
+          getMouseDown: () => !!(mouse.isDown && !prevMouse.isDown)
         },
+
+        Math: {
+          random: (min, max) => Math.random() * (max - min) + min,
+          
+          // --- 🎉 新機能: 便利ツール群 ---
+          lerp: (a, b, t) => a + (b - a) * t, // 滑らかに値を近づける補間
+          clamp: (val, min, max) => Math.max(min, Math.min(max, val)), // 値を範囲内に収める
+          deg2rad: (deg) => deg * Math.PI / 180, // 角度をラジアンに
+          rad2deg: (rad) => rad * 180 / Math.PI, // ラジアンを角度に
+          
+          // 指定した角度の方向へ進んだ新しい座標を返す
+          moveForward: (x, y, angleDeg, distance) => {
+            const rad = angleDeg * Math.PI / 180;
+            return { x: x + Math.cos(rad) * distance, y: y + Math.sin(rad) * distance };
+          },
+
+          // --- 🎉 新機能: 当たり判定 (Collision) ---
+          Collision: {
+            // 四角形 と 四角形
+            rectRect: (x1, y1, w1, h1, x2, y2, w2, h2) => {
+              return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+            },
+            // 円 と 円
+            circleCircle: (x1, y1, r1, x2, y2, r2) => {
+              const dx = x2 - x1;
+              const dy = y2 - y1;
+              return (dx * dx + dy * dy) < ((r1 + r2) * (r1 + r2));
+            },
+            // 点 と 四角形 (マウスカーソルがボタンに乗っているか等に便利)
+            pointRect: (px, py, rx, ry, rw, rh) => {
+              return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+            },
+            // 四角形 と 円 (プレイヤーと弾幕の判定などで大活躍！)
+            rectCircle: (rx, ry, rw, rh, cx, cy, cr) => {
+              let testX = cx;
+              let testY = cy;
+              
+              if (cx < rx) testX = rx;        // 左端より左
+              else if (cx > rx + rw) testX = rx + rw; // 右端より右
+              
+              if (cy < ry) testY = ry;        // 上端より上
+              else if (cy > ry + rh) testY = ry + rh; // 下端より下
+              
+              const distX = cx - testX;
+              const distY = cy - testY;
+              const distanceSquared = (distX * distX) + (distY * distY);
+              
+              return distanceSquared <= (cr * cr);
+            }
+          },
+
+          // (互換性維持のための古いラッパー)
+          distance: (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1),
+          isOverlap: (x1, y1, w1, h1, x2, y2, w2, h2) => {
+            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+          }
+        },
+        
         log: (msg) => addLog(msg, 'info')
       };
 
-      // ユーザーの全スクリプトを安全に評価
+      // コード評価
       const fullCode = project.scripts.map(s => s.content).join('\n\n');
       try {
         const runUserCode = new Function('Engine', fullCode);
         runUserCode(Engine);
       } catch (err) {
-        addLog(`スクリプトコンパイルエラー: ${err.message}`, 'error');
+        addLog(`コンパイルエラー: ${err.message}`, 'error');
         stopGameEngine();
         return;
       }
 
-      addLog('ゲームが正常に開始されました！', 'success');
+      // 初期化関数の実行
+      if (userInit) {
+        try {
+          userInit();
+        } catch (err) {
+          addLog(`初期化エラー: ${err.message}`, 'error');
+          stopGameEngine();
+          return;
+        }
+      }
+
+      addLog('ゲームが正常に開始されたよ！', 'success');
       isRunning = true;
       btnRun.classList.add('hidden');
       btnStop.classList.remove('hidden');
 
-      // メインのゲームループ
+      // メインループ
       let lastTime = performance.now();
       function loop(currentTime) {
         const dt = (currentTime - lastTime) / 1000;
@@ -568,22 +782,24 @@ Engine.setUpdate((dt) => {
           try {
             userUpdate(dt);
           } catch (err) {
-            addLog(`ループ内実行エラー: ${err.message}`, 'error');
+            addLog(`実行時エラー: ${err.message}`, 'error');
             stopGameEngine();
             return;
           }
         }
+
+        // 入力状態を「前のフレームの状態」として保存する
+        Object.assign(prevKeys, keys);
+        prevMouse.isDown = mouse.isDown;
+
         animationFrameId = requestAnimationFrame(loop);
       }
 
       animationFrameId = requestAnimationFrame(loop);
     }
 
-    // 初期化ロード
     renderTree();
-    setTimeout(() => {
-      selectFile('script', 'main');
-    }, 500);
+    setTimeout(() => { selectFile('script', 'main'); }, 500);
 
   </script>
 </body>
