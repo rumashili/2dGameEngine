@@ -95,6 +95,19 @@
           </ul>
         </section>
 
+        <!-- セクション: 便利ツール・数学 -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🧮 便利ツール・数学 (Math & Util)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.Math.random(min, max)</span> : minからmaxまでの間のランダムな小数を返すよ。</li>
+            <li><span class="doc-code">Engine.Math.lerp(a, b, t)</span> : aからbへ、tの割合(0.0〜1.0)で滑らかに変化する値を計算するよ。</li>
+            <li><span class="doc-code">Engine.Math.clamp(val, min, max)</span> : valをminとmaxの間に収めるよ。</li>
+            <li><span class="doc-code">Engine.Math.moveForward(x, y, angle, distance)</span> : 今の座標から指定した角度(度数)の方向へ進んだ新しい座標 <span class="doc-code">{x, y}</span> を返すよ。</li>
+            <li><span class="doc-code">Engine.play(name, volume, loop)</span> : アップロードした音声を再生するよ。<span class="text-xs text-slate-400">※volumeは0.0~1.0</span></li>
+            <li><span class="doc-code">Engine.log(msg)</span> : エディタ右下のコンソールにメッセージを出力するよ。</li>
+          </ul>
+        </section>
+
       </div>
     </div>
   </div>
@@ -140,7 +153,7 @@
     </div>
 
     <!-- --- 中央ペイン：コードエディタ --- -->
-    <div class="flex-1 flex flex-col bg-[#1e1e1e]">
+    <div class="flex-1 flex flex-col bg-[#1e1e1e] min-w-[300px]">
       <div class="h-12 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-4 text-sm font-medium">
         <div id="editor-title" class="flex items-center text-slate-200">
           <!-- 選択中のファイル名 -->
@@ -180,8 +193,13 @@
       </div>
     </div>
 
+    <!-- --- リサイズバー（スプリッター） --- -->
+    <div id="resizer" class="w-1.5 bg-slate-800 hover:bg-emerald-500 cursor-col-resize transition-colors shrink-0 z-10 flex flex-col justify-center items-center select-none shadow-[0_0_5px_rgba(0,0,0,0.5)]">
+      <div class="h-8 w-0.5 bg-slate-500 rounded pointer-events-none"></div>
+    </div>
+
     <!-- --- 右ペイン：プレビュー＆コンソール --- -->
-    <div class="w-[450px] bg-slate-950 flex flex-col border-l border-slate-800 shrink-0">
+    <div id="right-pane" class="w-[450px] min-w-[300px] bg-slate-950 flex flex-col border-l border-slate-800 shrink-0">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900">
         <span class="font-bold text-sm text-slate-300">Preview (800x600)</span>
         <div class="flex gap-2">
@@ -372,6 +390,7 @@ Engine.setUpdate((dt) => {
     function renderTree() {
       const renderList = (type, icon, color, listId, arr) => {
         const el = document.getElementById(listId);
+        if (!el) return;
         el.innerHTML = '';
         arr.forEach(item => {
           const isActive = (activeFile.type === type && activeFile.id === item.id);
@@ -766,7 +785,7 @@ Engine.setUpdate((dt) => {
     const project = ${projectDataStr};
     
     // --- Engine Utilities ---
-    ${engineCode}
+    \${engineCode}
     
     // --- Bootstrapper ---
     (async function init() {
@@ -835,6 +854,41 @@ Engine.setUpdate((dt) => {
       URL.revokeObjectURL(url);
       
       addLog('遊べるHTMLファイルをビルドしてダウンロードしたよ！🚀', 'success');
+    });
+
+    // --- ↔️ ペインのリサイズ機能 ---
+    const resizer = document.getElementById('resizer');
+    const rightPane = document.getElementById('right-pane');
+    const monacoContainer = document.getElementById('monaco-editor-container');
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      document.body.style.cursor = 'col-resize';
+      // Monacoエディタがマウスイベントを奪うのを防ぐ
+      monacoContainer.style.pointerEvents = 'none';
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      // ウィンドウ全体の幅から、マウスのX座標を引いて右ペインの幅を計算
+      let newWidth = window.innerWidth - e.clientX;
+      
+      // 最小幅(300px)と最大幅(ウィンドウ幅 - 左ペイン - 中央ペインの最小幅)の制限
+      const maxWidth = window.innerWidth - 256 - 300; 
+      if (newWidth < 300) newWidth = 300;
+      if (newWidth > maxWidth) newWidth = maxWidth;
+      
+      rightPane.style.width = `${newWidth}px`;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = 'default';
+        monacoContainer.style.pointerEvents = 'auto'; // Monacoエディタのイベントを元に戻す
+      }
     });
 
   </script>
