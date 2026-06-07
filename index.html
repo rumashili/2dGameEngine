@@ -16,7 +16,6 @@
     ::-webkit-scrollbar-track { background: #1e293b; }
     ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-    /* ドキュメント内のコードブロック用装飾 */
     .doc-code { background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; color: #38bdf8; display: inline-block; margin-bottom: 2px;}
   </style>
 </head>
@@ -24,13 +23,14 @@
 
   <!-- 隠しファイル入力 -->
   <input type="file" id="file-input" class="hidden">
+  <input type="file" id="import-input" accept=".json" class="hidden">
 
   <!-- APIドキュメント・モーダル -->
   <div id="api-doc-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 sm:p-8 transition-opacity">
     <div class="bg-slate-800 rounded-xl w-full max-w-4xl h-full max-h-[85vh] flex flex-col border border-slate-600 shadow-2xl overflow-hidden">
       <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center shrink-0">
         <h2 class="text-xl font-bold text-emerald-400 flex items-center gap-2">
-          <i class="fas fa-book-open"></i> API リファレンス
+          <i class="fas fa-book-open"></i> API リファレンス (v2 座標対応)
         </h2>
         <button id="btn-close-doc" class="text-slate-400 hover:text-white transition-colors bg-slate-700 hover:bg-slate-600 rounded-full w-8 h-8 flex items-center justify-center">
           <i class="fas fa-times"></i>
@@ -38,17 +38,31 @@
       </div>
       <div class="p-6 overflow-y-auto flex-1 space-y-8 text-sm text-slate-300 leading-relaxed select-text">
         
+        <!-- セクション: 座標系 -->
+        <section>
+          <h3 class="text-lg font-bold text-rose-400 border-b border-slate-600 pb-2 mb-3">📍 座標系と基準点 (重要！)</h3>
+          <ul class="space-y-3">
+            <li>
+              画面の中心が <strong class="text-white">X: 0, Y: 0</strong> だよ。<br>
+              <strong>右に行くほど X がプラス、上に行くほど Y がプラス</strong> になる数学的な座標系（デカルト座標）だよ。
+            </li>
+            <li>
+              <span class="doc-code">draw</span> や <span class="doc-code">drawRect</span> で指定する座標 (x, y) は、すべて <strong>画像の「中心」</strong> になるよ。
+            </li>
+          </ul>
+        </section>
+
         <!-- セクション: 基本構造 -->
         <section>
           <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🎮 基本構造 (ライフサイクル)</h3>
           <ul class="space-y-3">
             <li>
               <span class="doc-code">Engine.setInit( ( ) => { ... } )</span><br>
-              ゲームの実行開始時に <strong class="text-emerald-300">1回だけ</strong> 呼ばれる関数を登録するよ。変数の初期化などに使ってね。
+              ゲームの実行開始時に <strong class="text-emerald-300">1回だけ</strong> 呼ばれる関数を登録するよ。
             </li>
             <li>
               <span class="doc-code">Engine.setUpdate( (dt) => { ... } )</span><br>
-              毎フレーム（1秒間に約60回）呼ばれるループ処理だよ。<span class="doc-code">dt</span> は前回のフレームからの経過時間（秒）が入るから、移動速度を掛けると滑らかに動くよ。
+              毎フレーム呼ばれるループ処理だよ。<span class="doc-code">dt</span> は前回のフレームからの経過時間（秒）。
             </li>
           </ul>
         </section>
@@ -57,27 +71,15 @@
         <section>
           <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🖌️ 描画・UI (Draw)</h3>
           <ul class="space-y-3">
-            <li><span class="doc-code">Engine.clear(color)</span> : 画面全体を指定した色（例: '#000'）で塗りつぶしてクリアするよ。</li>
-            <li><span class="doc-code">Engine.draw(name, x, y, width, height, angle)</span> : アップロードしたコスチュームを描画するよ。</li>
-            <li><span class="doc-code">Engine.drawRect(x, y, w, h, color, fill)</span> : 四角形を描くよ。<span class="doc-code">fill</span> を false にすると枠線だけになるよ。</li>
+            <li><span class="doc-code">Engine.clear(color)</span> : 画面全体を指定色でクリアするよ。</li>
+            <li><span class="doc-code">Engine.draw(name, x, y, width, height, angle)</span> : 画像を <strong>中心基準</strong> で描画するよ。angleの単位は度数。</li>
+            <li><span class="doc-code">Engine.drawRect(x, y, w, h, color, fill)</span> : 四角形を <strong>中心基準</strong> で描くよ。</li>
             <li><span class="doc-code">Engine.drawCircle(x, y, radius, color, fill)</span> : 円を描くよ。</li>
-            <li><span class="doc-code">Engine.drawText(text, x, y, size, color)</span> : 文字や絵文字を描画するよ。</li>
+            <li><span class="doc-code">Engine.drawText(text, x, y, size, color)</span> : 文字を <strong>中央揃え(中心基準)</strong> で描画するよ。</li>
             <li>
               <span class="doc-code">Engine.drawTextBox(text, x, y, w, h, options)</span><br>
-              自動で改行される本格的なテキストボックス（会話ウィンドウ）を描くよ。<br>
-              <span class="text-xs text-slate-400">options例: { fontSize: 20, fontColor: '#fff', bgColor: 'rgba(0,0,0,0.8)', borderColor: '#fff', padding: 10 }</span>
+              自動改行されるテキストボックスを <strong>(x,y)を中心</strong> として描くよ。
             </li>
-          </ul>
-        </section>
-
-        <!-- セクション: 入力 -->
-        <section>
-          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">⌨️ 入力 (Input)</h3>
-          <ul class="space-y-3">
-            <li><span class="doc-code">Engine.Input.getKey('KeyName')</span> : キーが <strong class="text-emerald-300">押されている間ずっと</strong> true を返すよ。（例: 'ArrowRight', 'Space'）</li>
-            <li><span class="doc-code">Engine.Input.getKeyDown('KeyName')</span> : キーが <strong class="text-emerald-300">押された瞬間だけ</strong> true を返すよ。</li>
-            <li><span class="doc-code">Engine.Input.getMouse()</span> : マウスの情報を <span class="doc-code">{ x, y, isDown }</span> のオブジェクトで返すよ。</li>
-            <li><span class="doc-code">Engine.Input.getMouseDown()</span> : マウスがクリックされた瞬間だけ true を返すよ。</li>
           </ul>
         </section>
 
@@ -85,23 +87,11 @@
         <section>
           <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">💥 当たり判定 (Collision)</h3>
           <ul class="space-y-3">
-            <li><span class="doc-code">Engine.Math.Collision.rectRect(x1, y1, w1, h1, x2, y2, w2, h2)</span> : 2つの四角形が重なっているか判定するよ。</li>
-            <li><span class="doc-code">Engine.Math.Collision.circleCircle(x1, y1, r1, x2, y2, r2)</span> : 2つの円が重なっているか判定するよ。</li>
-            <li><span class="doc-code">Engine.Math.Collision.rectCircle(rx, ry, rw, rh, cx, cy, cr)</span> : 四角形と円が重なっているか判定するよ。アクションゲームで大活躍！</li>
-            <li><span class="doc-code">Engine.Math.Collision.pointRect(px, py, rx, ry, rw, rh)</span> : 点（マウスカーソルなど）が四角形の中に入っているか判定するよ。ボタンを作る時に便利！</li>
-          </ul>
-        </section>
-
-        <!-- セクション: 便利ツール・数学 -->
-        <section>
-          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🧮 便利ツール・数学 (Math & Util)</h3>
-          <ul class="space-y-3">
-            <li><span class="doc-code">Engine.Math.random(min, max)</span> : minからmaxまでの間のランダムな小数を返すよ。</li>
-            <li><span class="doc-code">Engine.Math.lerp(a, b, t)</span> : aからbへ、tの割合(0.0〜1.0)で滑らかに変化する値を計算するよ。カメラの追従などに便利！</li>
-            <li><span class="doc-code">Engine.Math.clamp(val, min, max)</span> : valをminとmaxの間に収めるよ（画面端から出ないようにする時など）。</li>
-            <li><span class="doc-code">Engine.Math.moveForward(x, y, angle, distance)</span> : 今の座標から指定した角度(度数)の方向へ進んだ新しい座標 <span class="doc-code">{x, y}</span> を返すよ。</li>
-            <li><span class="doc-code">Engine.play(name, volume, loop)</span> : アップロードした音声を再生するよ。</li>
-            <li><span class="doc-code">Engine.log(msg)</span> : エディタ右下のコンソールにメッセージを出力するよ。</li>
+            <p class="text-yellow-300 mb-2">※すべての x, y 引数は <strong>中心座標</strong> を渡してね！</p>
+            <li><span class="doc-code">Engine.Math.Collision.rectRect(x1, y1, w1, h1, x2, y2, w2, h2)</span></li>
+            <li><span class="doc-code">Engine.Math.Collision.circleCircle(x1, y1, r1, x2, y2, r2)</span></li>
+            <li><span class="doc-code">Engine.Math.Collision.rectCircle(rx, ry, rw, rh, cx, cy, cr)</span></li>
+            <li><span class="doc-code">Engine.Math.Collision.pointRect(px, py, rx, ry, rw, rh)</span></li>
           </ul>
         </section>
 
@@ -124,9 +114,7 @@
         <div>
           <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-bold px-2 mb-2">
             <span>Scripts</span>
-            <button id="btn-add-script" class="hover:text-white transition-colors" title="スクリプトを追加">
-              <i class="fas fa-plus"></i>
-            </button>
+            <button id="btn-add-script" class="hover:text-white transition-colors" title="スクリプトを追加"><i class="fas fa-plus"></i></button>
           </div>
           <div id="scripts-list" class="space-y-1"></div>
         </div>
@@ -135,9 +123,7 @@
         <div>
           <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-bold px-2 mb-2">
             <span>Costumes</span>
-            <button id="btn-add-costume" class="hover:text-white transition-colors" title="画像をアップロード">
-              <i class="fas fa-plus"></i>
-            </button>
+            <button id="btn-add-costume" class="hover:text-white transition-colors" title="画像をアップロード"><i class="fas fa-plus"></i></button>
           </div>
           <div id="costumes-list" class="space-y-1"></div>
         </div>
@@ -146,9 +132,7 @@
         <div>
           <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-bold px-2 mb-2">
             <span>Sounds</span>
-            <button id="btn-add-sound" class="hover:text-white transition-colors" title="音声をアップロード">
-              <i class="fas fa-plus"></i>
-            </button>
+            <button id="btn-add-sound" class="hover:text-white transition-colors" title="音声をアップロード"><i class="fas fa-plus"></i></button>
           </div>
           <div id="sounds-list" class="space-y-1"></div>
         </div>
@@ -158,13 +142,31 @@
     <!-- --- 中央ペイン：コードエディタ --- -->
     <div class="flex-1 flex flex-col bg-[#1e1e1e]">
       <div class="h-12 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-4 text-sm font-medium">
-        <div id="editor-title" class="flex items-center">
+        <div id="editor-title" class="flex items-center text-slate-200">
           <!-- 選択中のファイル名 -->
         </div>
-        <div class="flex items-center gap-4">
-          <div class="text-xs text-slate-400 hidden sm:block">Ctrl+S / Cmd+S で保存</div>
-          <button id="btn-open-doc" class="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded transition-colors text-xs font-bold">
-            <i class="fas fa-book"></i> ドキュメント
+        
+        <div class="flex items-center gap-3">
+          <div class="text-xs text-slate-400 hidden sm:block mr-2">自動保存中...</div>
+          
+          <!-- プロジェクト操作ボタン -->
+          <button id="btn-import-project" title="プロジェクトを読み込む (.json)" class="text-slate-400 hover:text-white transition-colors">
+            <i class="fas fa-folder-open text-lg"></i>
+          </button>
+          <button id="btn-export-project" title="プロジェクトを保存 (.json)" class="text-slate-400 hover:text-white transition-colors">
+            <i class="fas fa-save text-lg"></i>
+          </button>
+          
+          <div class="w-px h-5 bg-[#3c3c3c] mx-1"></div>
+
+          <!-- Build Game -->
+          <button id="btn-build-game" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1.5 shadow" title="遊べるHTMLを出力">
+            <i class="fas fa-box"></i> Build Game
+          </button>
+
+          <!-- Docs -->
+          <button id="btn-open-doc" class="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded transition-colors text-xs font-bold ml-1">
+            <i class="fas fa-book"></i> Docs
           </button>
         </div>
       </div>
@@ -181,7 +183,7 @@
     <!-- --- 右ペイン：プレビュー＆コンソール --- -->
     <div class="w-[450px] bg-slate-950 flex flex-col border-l border-slate-800 shrink-0">
       <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900">
-        <span class="font-bold text-sm text-slate-300">Preview</span>
+        <span class="font-bold text-sm text-slate-300">Preview (800x600)</span>
         <div class="flex gap-2">
           <button id="btn-run" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
             <i class="fas fa-play"></i> Run
@@ -195,6 +197,7 @@
       <!-- ゲームキャンバス -->
       <div class="p-4 flex-1 flex flex-col">
         <div class="w-full aspect-[4/3] bg-black rounded shadow-lg overflow-hidden border border-slate-800 relative">
+          <!-- キャンバスの解像度は内部的に800x600固定 -->
           <canvas id="game-canvas" width="800" height="600" class="w-full h-full block bg-[#1e293b]"></canvas>
         </div>
 
@@ -217,115 +220,113 @@
 
   <!-- --- アプリケーションロジック --- -->
   <script>
-    // --- ドキュメントの開閉ロジック ---
-    const apiDocModal = document.getElementById('api-doc-modal');
-    document.getElementById('btn-open-doc').addEventListener('click', () => {
-      apiDocModal.classList.remove('hidden');
-    });
-    document.getElementById('btn-close-doc').addEventListener('click', () => {
-      apiDocModal.classList.add('hidden');
-    });
-    // モーダルの背景クリックで閉じる
-    apiDocModal.addEventListener('click', (e) => {
-      if(e.target === apiDocModal) apiDocModal.classList.add('hidden');
-    });
+    const STORAGE_KEY = '2d_engine_project_v2';
 
-    // --- 初期状態のゲームスクリプト (新機能を使ったサンプルに更新!) ---
-    const initialCode = `// 状態を管理する変数
-let player = { x: 400, y: 300, w: 64, h: 64 };
-let enemyCircle = { x: 200, y: 200, r: 40 };
-let score = 0;
+    // --- 初期状態のゲームスクリプト (新座標系対応) ---
+    const initialCode = `// 状態を管理する変数（中心座標基準になりました！）
+// 画面サイズは 800x600、中心が (0,0) なので
+// Xは -400 〜 +400、Yは -300 〜 +300 の範囲になるよ。
+let player = { x: 0, y: 0, w: 64, h: 64 };
+let enemyCircle = { x: 200, y: 150, r: 40 };
 let showDialogue = true;
+let score = 0;
 
-// 【1】 起動時に1回だけ呼ばれる初期化処理
 Engine.setInit(() => {
-  Engine.log("新機能のデモを開始するよ！🚀");
+  Engine.log("新座標系のデモを開始！🚀");
 });
 
-// 【2】 毎フレーム呼ばれる更新処理
 Engine.setUpdate((dt) => {
-  // 背景をクリア
   Engine.clear('#1e293b');
 
-  // マウスの情報を取得
   const mouse = Engine.Input.getMouse();
-
-  // プレイヤーの移動処理（矢印キー）
   const speed = 300 * dt;
+
+  // 上がプラス(+y), 右がプラス(+x) だよ！
   if (Engine.Input.getKey('ArrowRight')) player.x += speed;
   if (Engine.Input.getKey('ArrowLeft')) player.x -= speed;
-  if (Engine.Input.getKey('ArrowUp')) player.y -= speed;
-  if (Engine.Input.getKey('ArrowDown')) player.y += speed;
+  if (Engine.Input.getKey('ArrowUp')) player.y += speed;
+  if (Engine.Input.getKey('ArrowDown')) player.y -= speed;
 
-  // 画面端から出ないように clamp で制限するよ！
-  player.x = Engine.Math.clamp(player.x, 0, 800 - player.w);
-  player.y = Engine.Math.clamp(player.y, 0, 600 - player.h);
+  // 画面端から出ないように制限 (X:-400~400, Y:-300~300)
+  // 画像も「中心基準」で描かれるので、端っこは w/2, h/2 分ずらすよ。
+  player.x = Engine.Math.clamp(player.x, -400 + player.w/2, 400 - player.w/2);
+  player.y = Engine.Math.clamp(player.y, -300 + player.h/2, 300 - player.h/2);
 
-  // 敵（円）は lerp を使ってマウスカーソルに滑らかに追従させるよ！
+  // 敵（円）は滑らかにマウスに追従
   enemyCircle.x = Engine.Math.lerp(enemyCircle.x, mouse.x, 0.05);
   enemyCircle.y = Engine.Math.lerp(enemyCircle.y, mouse.y, 0.05);
-
-  // --- 💥 ここから新機能の当たり判定テスト ---
   
-  // プレイヤー(四角) と 敵(円) が当たっているか判定
+  // マウスクリックでパーティクル風に飛ばす
+  if (Engine.Input.getMouseDown()) {
+    enemyCircle.x = Engine.Math.random(-300, 300);
+    enemyCircle.y = Engine.Math.random(-200, 200);
+    Engine.log('Click! ワープしたよ');
+  }
+
+  // 四角(中心基準) と 円(中心基準) の当たり判定
   let isColliding = Engine.Math.Collision.rectCircle(
     player.x, player.y, player.w, player.h,
     enemyCircle.x, enemyCircle.y, enemyCircle.r
   );
 
-  // 敵の描画（当たっていたら赤色になるよ！）
   Engine.drawCircle(enemyCircle.x, enemyCircle.y, enemyCircle.r, isColliding ? '#ef4444' : '#8b5cf6');
 
-  // プレイヤーの描画
   if (Engine.hasCostume('player')) {
     Engine.draw('player', player.x, player.y, player.w, player.h);
   } else {
     Engine.drawRect(player.x, player.y, player.w, player.h, '#38bdf8');
-    Engine.drawText('🚀', player.x + 8, player.y + 40, 40);
+    Engine.drawText('🚀', player.x, player.y + 4, 32); // 中心基準で文字を描画
   }
 
-  // --- 💬 新機能のテキストボックス描画 ---
   if (showDialogue) {
-    // 長い文章も自動で折り返して、立派な枠付きで表示できるよ！
+    // 画面中央 (0, -100) を中心としてダイアログを描画
     Engine.drawTextBox(
-      "こんにちは！新しい機能が追加されたよ。\\n・四角と円の当たり判定 (Collision)\\n・自動改行付きテキストボックス\\n・滑らかな追従 (lerp) などを試してみてね！\\n※Enterキーで閉じるよ。",
-      50, 400, 700, 150,
-      {
-        fontSize: 22,
-        fontColor: '#f8fafc',
-        bgColor: 'rgba(15, 23, 42, 0.85)',
-        borderColor: '#38bdf8',
-        borderWidth: 3,
-        padding: 20
-      }
+      "【v2アップデート！】\\n・画面の中心が (0,0) になったよ！\\n・上が+y、右が+x の数学座標系だよ！\\n・図形も画像も「中心」を基準に描画されるよ！\\n・ブラウザに自動保存＆Build Game搭載！",
+      0, -100, 600, 180,
+      { fontSize: 22, fontColor: '#f8fafc', bgColor: 'rgba(15, 23, 42, 0.85)', borderColor: '#38bdf8', borderWidth: 3, padding: 20 }
     );
-
-    // Enterキーを押した瞬間、ダイアログを消す
-    if (Engine.Input.getKeyDown('Enter')) {
-      showDialogue = false;
-    }
+    if (Engine.Input.getKeyDown('Enter')) showDialogue = false;
   }
 
-  // UIの表示
-  Engine.drawText('Arrow keys: Move / Mouse: Target', 20, 40, 16, '#94a3b8');
+  // UI (左上に表示。左上は X:-380, Y:260 あたり)
+  Engine.drawText('Arrow: Move / Mouse: Target', -230, 260, 18, '#94a3b8');
 });`;
 
-    // プロジェクトデータ管理
-    const project = {
-      scripts: [
-        { id: 'main', name: 'main', content: initialCode }
-      ],
+    // --- プロジェクト管理 ---
+    let project = {
+      scripts: [{ id: 'main', name: 'main', content: initialCode }],
       costumes: [],
       sounds: []
     };
 
+    function saveProjectToLocal() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(project)); } catch(e) { console.error("Save failed", e); }
+    }
+
+    function loadProjectFromLocal() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        try {
+          project = JSON.parse(data);
+          addLog('ローカルストレージから前回までの進捗を読み込んだよ。', 'success');
+        } catch(e) { console.error("Load failed", e); }
+      }
+    }
+
+    // --- ドキュメントの開閉 ---
+    const apiDocModal = document.getElementById('api-doc-modal');
+    document.getElementById('btn-open-doc').addEventListener('click', () => apiDocModal.classList.remove('hidden'));
+    document.getElementById('btn-close-doc').addEventListener('click', () => apiDocModal.classList.add('hidden'));
+    apiDocModal.addEventListener('click', (e) => { if(e.target === apiDocModal) apiDocModal.classList.add('hidden'); });
+
+    // --- UI/Editor State ---
     let activeFile = { type: 'script', id: 'main' };
     let editor = null;
     let isRunning = false;
     let animationFrameId = null;
     let activeEngineHandlers = null;
 
-    // Monaco Editor の初期化
+    // --- Monaco Editor ---
     require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
     require(['vs/editor/editor.main'], function () {
       editor = monaco.editor.create(document.getElementById('monaco-editor-container'), {
@@ -340,12 +341,20 @@ Engine.setUpdate((dt) => {
       editor.onDidChangeModelContent(() => {
         if (activeFile.type === 'script') {
           const script = project.scripts.find(s => s.id === activeFile.id);
-          if (script) script.content = editor.getValue();
+          if (script) {
+            script.content = editor.getValue();
+            saveProjectToLocal(); // 自動保存
+          }
         }
       });
+      
+      // 初回ロード
+      loadProjectFromLocal();
+      renderTree();
+      if(project.scripts.length > 0) selectFile('script', project.scripts[0].id);
     });
 
-    // ログ表示
+    // --- コンソールログ ---
     const consoleLogs = document.getElementById('console-logs');
     function addLog(msg, type = 'info') {
       if (consoleLogs.innerHTML.includes('No logs yet...')) consoleLogs.innerHTML = '';
@@ -356,129 +365,81 @@ Engine.setUpdate((dt) => {
       consoleLogs.appendChild(div);
       consoleLogs.scrollTop = consoleLogs.scrollHeight;
     }
+    function escapeHtml(str) { return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+    document.getElementById('btn-clear-console').addEventListener('click', () => { consoleLogs.innerHTML = '<div class="text-slate-600">No logs yet...</div>'; });
 
-    function escapeHtml(str) {
-      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    document.getElementById('btn-clear-console').addEventListener('click', () => {
-      consoleLogs.innerHTML = '<div class="text-slate-600">No logs yet...</div>';
-    });
-
-    // リソースツリーのUI再描画
+    // --- ツリー描画 ---
     function renderTree() {
-      // Scripts 一覧
-      const scriptsList = document.getElementById('scripts-list');
-      scriptsList.innerHTML = '';
-      project.scripts.forEach(s => {
-        const activeClass = (activeFile.type === 'script' && activeFile.id === s.id) ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
-        scriptsList.innerHTML += `
-          <div onclick="selectFile('script', '${s.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
-            <span class="flex items-center gap-2 truncate text-sm">
-              <i class="fab fa-js text-yellow-400 w-4"></i>
-              <span>${s.name}.js</span>
-            </span>
-            ${s.id !== 'main' ? `<button onclick="event.stopPropagation(); deleteFile('script', '${s.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>` : ''}
-          </div>
-        `;
-      });
-
-      // Costumes 一覧
-      const costumesList = document.getElementById('costumes-list');
-      costumesList.innerHTML = '';
-      project.costumes.forEach(c => {
-        const activeClass = (activeFile.type === 'costume' && activeFile.id === c.id) ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
-        costumesList.innerHTML += `
-          <div onclick="selectFile('costume', '${c.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
-            <span class="flex items-center gap-2 truncate text-sm">
-              <i class="fas fa-image text-purple-400 w-4"></i>
-              <span>${c.name}</span>
-            </span>
-            <button onclick="event.stopPropagation(); deleteFile('costume', '${c.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>
-          </div>
-        `;
-      });
-
-      // Sounds 一覧
-      const soundsList = document.getElementById('sounds-list');
-      soundsList.innerHTML = '';
-      project.sounds.forEach(s => {
-        const activeClass = (activeFile.type === 'sound' && activeFile.id === s.id) ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
-        soundsList.innerHTML += `
-          <div onclick="selectFile('sound', '${s.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
-            <span class="flex items-center gap-2 truncate text-sm">
-              <i class="fas fa-music text-pink-400 w-4"></i>
-              <span>${s.name}</span>
-            </span>
-            <button onclick="event.stopPropagation(); deleteFile('sound', '${s.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>
-          </div>
-        `;
-      });
+      const renderList = (type, icon, color, listId, arr) => {
+        const el = document.getElementById(listId);
+        el.innerHTML = '';
+        arr.forEach(item => {
+          const isActive = (activeFile.type === type && activeFile.id === item.id);
+          const activeClass = isActive ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
+          const ext = type === 'script' ? '.js' : '';
+          const delBtn = (type === 'script' && item.id === 'main') ? '' : `<button onclick="event.stopPropagation(); deleteFile('${type}', '${item.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>`;
+          el.innerHTML += `
+            <div onclick="selectFile('${type}', '${item.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
+              <span class="flex items-center gap-2 truncate text-sm"><i class="${icon} ${color} w-4 text-center"></i><span>${item.name}${ext}</span></span>
+              ${delBtn}
+            </div>
+          `;
+        });
+      };
+      renderList('script', 'fab fa-js', 'text-yellow-400', 'scripts-list', project.scripts);
+      renderList('costume', 'fas fa-image', 'text-purple-400', 'costumes-list', project.costumes);
+      renderList('sound', 'fas fa-music', 'text-pink-400', 'sounds-list', project.sounds);
     }
 
     window.selectFile = function(type, id) {
       activeFile = { type, id };
       renderTree();
-
       const editorEl = document.getElementById('monaco-editor-container');
       const previewEl = document.getElementById('asset-preview-container');
       const titleEl = document.getElementById('editor-title');
 
       if (type === 'script') {
-        editorEl.classList.remove('hidden');
-        previewEl.classList.add('hidden');
+        editorEl.classList.remove('hidden'); previewEl.classList.add('hidden');
         const script = project.scripts.find(s => s.id === id);
         if (script && editor) editor.setValue(script.content);
         titleEl.innerHTML = `<i class="fab fa-js text-yellow-400 mr-2"></i> ${script.name}.js`;
       } else if (type === 'costume') {
-        editorEl.classList.add('hidden');
-        previewEl.classList.remove('hidden');
+        editorEl.classList.add('hidden'); previewEl.classList.remove('hidden');
         const costume = project.costumes.find(c => c.id === id);
         titleEl.innerHTML = `<i class="fas fa-image text-purple-400 mr-2"></i> ${costume.name}`;
-        previewEl.innerHTML = `
-          <img src="${costume.src}" alt="${costume.name}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">
-        `;
+        previewEl.innerHTML = `<img src="${costume.src}" alt="${costume.name}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">`;
       } else if (type === 'sound') {
-        editorEl.classList.add('hidden');
-        previewEl.classList.remove('hidden');
+        editorEl.classList.add('hidden'); previewEl.classList.remove('hidden');
         const sound = project.sounds.find(s => s.id === id);
         titleEl.innerHTML = `<i class="fas fa-music text-pink-400 mr-2"></i> ${sound.name}`;
-        previewEl.innerHTML = `
-          <div class="bg-slate-800 p-6 rounded-lg flex flex-col items-center gap-4">
-            <i class="fas fa-volume-high text-5xl text-pink-400 animate-bounce"></i>
-            <audio controls src="${sound.src}" class="w-64"></audio>
-          </div>
-        `;
+        previewEl.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg flex flex-col items-center gap-4"><i class="fas fa-volume-high text-5xl text-pink-400 animate-bounce"></i><audio controls src="${sound.src}" class="w-64"></audio></div>`;
       }
     };
 
     window.deleteFile = function(type, id) {
-      if (type === 'script') project.scripts = project.scripts.filter(s => s.id !== id);
-      else if (type === 'costume') project.costumes = project.costumes.filter(c => c.id !== id);
-      else if (type === 'sound') project.sounds = project.sounds.filter(s => s.id !== id);
-
-      if (activeFile.id === id) selectFile('script', 'main');
-      else renderTree();
+      if(confirm('削除してよろしいですか？')) {
+        if (type === 'script') project.scripts = project.scripts.filter(s => s.id !== id);
+        else if (type === 'costume') project.costumes = project.costumes.filter(c => c.id !== id);
+        else if (type === 'sound') project.sounds = project.sounds.filter(s => s.id !== id);
+        saveProjectToLocal();
+        if (activeFile.id === id) selectFile('script', 'main'); else renderTree();
+      }
     };
 
+    // --- ファイル追加アクション ---
     document.getElementById('btn-add-script').addEventListener('click', () => {
       const name = prompt("スクリプト名を入力してください (英数字):", `actor_${project.scripts.length + 1}`);
       if (!name) return;
       const cleanName = name.replace(/[^a-zA-Z0-9_]/g, '');
       const id = 'script_' + Date.now();
-      project.scripts.push({ id, name: cleanName, content: `// ${cleanName} の行動処理\n` });
-      selectFile('script', id);
+      project.scripts.push({ id, name: cleanName, content: `// ${cleanName} の処理\n` });
+      saveProjectToLocal(); selectFile('script', id);
     });
 
     const fileInput = document.getElementById('file-input');
     let uploadTarget = 'costume';
-
-    document.getElementById('btn-add-costume').addEventListener('click', () => {
-      uploadTarget = 'costume'; fileInput.accept = 'image/*'; fileInput.click();
-    });
-    document.getElementById('btn-add-sound').addEventListener('click', () => {
-      uploadTarget = 'sound'; fileInput.accept = 'audio/*'; fileInput.click();
-    });
+    document.getElementById('btn-add-costume').addEventListener('click', () => { uploadTarget = 'costume'; fileInput.accept = 'image/*'; fileInput.click(); });
+    document.getElementById('btn-add-sound').addEventListener('click', () => { uploadTarget = 'sound'; fileInput.accept = 'audio/*'; fileInput.click(); });
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -488,43 +449,214 @@ Engine.setUpdate((dt) => {
         const src = event.target.result;
         const name = file.name.split('.')[0].replace(/[^a-zA-Z0-9_]/g, '');
         const id = 'asset_' + Date.now();
-        if (uploadTarget === 'costume') {
-          project.costumes.push({ id, name, src });
-          addLog(`コスチューム「${name}」を追加したよ。`, 'success');
-        } else {
-          project.sounds.push({ id, name, src });
-          addLog(`サウンド「${name}」を追加したよ。`, 'success');
-        }
-        renderTree();
+        if (uploadTarget === 'costume') { project.costumes.push({ id, name, src }); addLog(`画像「${name}」を追加したよ。`, 'success'); }
+        else { project.sounds.push({ id, name, src }); addLog(`音声「${name}」を追加したよ。`, 'success'); }
+        saveProjectToLocal(); renderTree();
       };
       reader.readAsDataURL(file);
-      e.target.value = ''; // リセット
+      e.target.value = '';
     });
 
-    // --- ゲームエンジンの実行制御 ---
+    // --- インポート / エクスポート ---
+    document.getElementById('btn-export-project').addEventListener('click', () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(project));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "my_game_project.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+      addLog('プロジェクト(JSON)をダウンロードしたよ！', 'success');
+    });
+
+    const importInput = document.getElementById('import-input');
+    document.getElementById('btn-import-project').addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          project = JSON.parse(e.target.result);
+          saveProjectToLocal();
+          renderTree();
+          selectFile('script', project.scripts[0].id);
+          addLog('プロジェクトを読み込んだよ！', 'success');
+        } catch(err) { addLog('読み込みに失敗しました。', 'error'); }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    // --- 🎮 エンジンの核となるロジック群 (エディタ & ビルド共通) ---
+    // ここから下の処理は、ビルドされたHTML内でも同様の考え方で動くように設計されています。
+
+    // 座標変換関数: ワールド座標(中心0,0 上+y) -> Canvas座標(左上0,0 下+y)
+    const getCanvasPos = (canvas, worldX, worldY) => {
+      return {
+        cx: canvas.width / 2 + worldX,
+        cy: canvas.height / 2 - worldY
+      };
+    };
+
+    // マウス座標変換関数: Event座標 -> ワールド座標
+    const getMouseWorldPos = (canvas, clientX, clientY) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const cx = (clientX - rect.left) * scaleX;
+      const cy = (clientY - rect.top) * scaleY;
+      return {
+        wx: cx - canvas.width / 2,
+        wy: canvas.height / 2 - cy
+      };
+    };
+
+    // エンジンAPIオブジェクトを生成する関数 (実行コンテキスト毎に作るため)
+    function createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, customLogFn) {
+      let userInit = null;
+      let userUpdate = null;
+
+      const Engine = {
+        _getUserInit: () => userInit,
+        _getUserUpdate: () => userUpdate,
+
+        setInit: (fn) => { userInit = fn; },
+        setUpdate: (fn) => { userUpdate = fn; },
+        
+        clear: (color = '#000') => {
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        },
+        hasCostume: (name) => !!loadedImages[name],
+        hasSound: (name) => !!loadedSounds[name],
+        
+        // --- 描画 (中心基準) ---
+        draw: (name, x, y, width, height, angle = 0) => {
+          const img = loadedImages[name];
+          if (!img) return;
+          const { cx, cy } = getCanvasPos(canvas, x, y);
+          ctx.save();
+          ctx.translate(cx, cy);
+          // Canvasは時計回りが正だが、デカルト座標では反時計回りが正のためマイナスにする
+          ctx.rotate((-angle * Math.PI) / 180);
+          ctx.drawImage(img, -width / 2, -height / 2, width, height);
+          ctx.restore();
+        },
+        drawRect: (x, y, w, h, color = '#fff', fill = true) => {
+          const { cx, cy } = getCanvasPos(canvas, x, y);
+          ctx.fillStyle = color; ctx.strokeStyle = color;
+          if (fill) ctx.fillRect(cx - w/2, cy - h/2, w, h);
+          else ctx.strokeRect(cx - w/2, cy - h/2, w, h);
+        },
+        drawCircle: (x, y, r, color = '#fff', fill = true) => {
+          const { cx, cy } = getCanvasPos(canvas, x, y);
+          ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = color; ctx.strokeStyle = color;
+          if (fill) ctx.fill(); else ctx.stroke();
+        },
+        drawText: (text, x, y, size = 20, color = '#fff') => {
+          const { cx, cy } = getCanvasPos(canvas, x, y);
+          ctx.fillStyle = color; ctx.font = `bold ${size}px "Segoe UI", sans-serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, cx, cy);
+        },
+        drawTextBox: (text, x, y, width, height, options = {}) => {
+          const { fontSize = 20, fontColor = '#fff', bgColor = 'rgba(0,0,0,0.8)', borderColor = '#fff', borderWidth = 2, padding = 10, lineHeight = 1.5 } = options;
+          const { cx, cy } = getCanvasPos(canvas, x, y);
+          const startX = cx - width / 2;
+          const startY = cy - height / 2;
+
+          ctx.fillStyle = bgColor; ctx.fillRect(startX, startY, width, height);
+          if (borderWidth > 0) { ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth; ctx.strokeRect(startX, startY, width, height); }
+
+          ctx.fillStyle = fontColor; ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+          const maxTextWidth = width - padding * 2;
+          let currentY = startY + padding;
+          
+          const lines = text.split('\n');
+          for (const paragraph of lines) {
+            let currentLine = '';
+            for (const char of paragraph) {
+              const testLine = currentLine + char;
+              if (ctx.measureText(testLine).width > maxTextWidth && currentLine !== '') {
+                ctx.fillText(currentLine, startX + padding, currentY);
+                currentLine = char; currentY += fontSize * lineHeight;
+              } else { currentLine = testLine; }
+            }
+            ctx.fillText(currentLine, startX + padding, currentY);
+            currentY += fontSize * lineHeight;
+          }
+        },
+        play: (name, volume = 1.0, loop = false) => {
+          const src = loadedSounds[name];
+          if (!src) return;
+          const audio = new Audio(src); audio.volume = volume; audio.loop = loop;
+          audio.play().catch(()=>{});
+        },
+        Input: {
+          getKey: (code) => !!inputState.keys[code],
+          getKeyDown: (code) => !!(inputState.keys[code] && !inputState.prevKeys[code]),
+          getKeyUp: (code) => !!(!inputState.keys[code] && inputState.prevKeys[code]),
+          getMouse: () => ({ ...inputState.mouse }),
+          getMouseDown: () => !!(inputState.mouse.isDown && !inputState.prevMouse.isDown)
+        },
+        Math: {
+          random: (min, max) => Math.random() * (max - min) + min,
+          lerp: (a, b, t) => a + (b - a) * t,
+          clamp: (val, min, max) => Math.max(min, Math.min(max, val)),
+          deg2rad: (deg) => deg * Math.PI / 180, rad2deg: (rad) => rad * 180 / Math.PI,
+          moveForward: (x, y, angleDeg, distance) => {
+            const rad = angleDeg * Math.PI / 180;
+            // 上が+yなので sin() を足すことで上に進む
+            return { x: x + Math.cos(rad) * distance, y: y + Math.sin(rad) * distance };
+          },
+          Collision: {
+            rectRect: (x1, y1, w1, h1, x2, y2, w2, h2) => {
+              return (x1 - w1/2) < (x2 + w2/2) && (x1 + w1/2) > (x2 - w2/2) && 
+                     (y1 - h1/2) < (y2 + h2/2) && (y1 + h1/2) > (y2 - h2/2);
+            },
+            circleCircle: (x1, y1, r1, x2, y2, r2) => {
+              return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1) < (r1 + r2) * (r1 + r2);
+            },
+            pointRect: (px, py, rx, ry, rw, rh) => {
+              return px >= rx - rw/2 && px <= rx + rw/2 && py >= ry - rh/2 && py <= ry + rh/2;
+            },
+            rectCircle: (rx, ry, rw, rh, cx, cy, cr) => {
+              let testX = cx; let testY = cy;
+              if (cx < rx - rw/2) testX = rx - rw/2; else if (cx > rx + rw/2) testX = rx + rw/2;
+              if (cy < ry - rh/2) testY = ry - rh/2; else if (cy > ry + rh/2) testY = ry + rh/2;
+              const distX = cx - testX; const distY = cy - testY;
+              return (distX * distX) + (distY * distY) <= (cr * cr);
+            }
+          }
+        },
+        log: customLogFn
+      };
+      return Engine;
+    }
+
+
+    // --- エディタ上でのゲーム実行処理 ---
     const btnRun = document.getElementById('btn-run');
     const btnStop = document.getElementById('btn-stop');
-
     btnRun.addEventListener('click', startGameEngine);
     btnStop.addEventListener('click', stopGameEngine);
 
     function stopGameEngine() {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
+      if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
       if (activeEngineHandlers) {
         window.removeEventListener('keydown', activeEngineHandlers.keydown);
         window.removeEventListener('keyup', activeEngineHandlers.keyup);
         const canvas = document.getElementById('game-canvas');
         canvas.removeEventListener('mousedown', activeEngineHandlers.mousedown);
-        canvas.removeEventListener('mouseup', activeEngineHandlers.mouseup);
+        window.removeEventListener('mouseup', activeEngineHandlers.mouseup);
         canvas.removeEventListener('mousemove', activeEngineHandlers.mousemove);
         activeEngineHandlers = null;
       }
       isRunning = false;
-      btnRun.classList.remove('hidden');
-      btnStop.classList.add('hidden');
+      btnRun.classList.remove('hidden'); btnStop.classList.add('hidden');
       addLog('ゲームを停止したよ。');
     }
 
@@ -537,269 +669,173 @@ Engine.setUpdate((dt) => {
 
       const loadedImages = {};
       for (const costume of project.costumes) {
-        const img = new Image();
-        img.src = costume.src;
-        await new Promise((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => { addLog(`画像の読み込み失敗: ${costume.name}`, 'error'); resolve(); };
-        });
+        const img = new Image(); img.src = costume.src;
+        await new Promise((resolve) => { img.onload = resolve; img.onerror = () => { addLog(`画像エラー: ${costume.name}`, 'error'); resolve(); }; });
         loadedImages[costume.name] = img;
       }
-
       const loadedSounds = {};
       for (const sound of project.sounds) loadedSounds[sound.name] = sound.src;
 
-      // 入力状態の管理（現在と1フレーム前）
-      const keys = {};
-      const prevKeys = {};
-      const mouse = { x: 0, y: 0, isDown: false };
-      const prevMouse = { isDown: false };
+      const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
 
-      const keydownHandler = (e) => { keys[e.code] = true; };
-      const keyupHandler = (e) => { keys[e.code] = false; };
-      const mousedownHandler = (e) => { mouse.isDown = true; };
-      const mouseupHandler = (e) => { mouse.isDown = false; };
+      const keydownHandler = (e) => { inputState.keys[e.code] = true; };
+      const keyupHandler = (e) => { inputState.keys[e.code] = false; };
+      const mousedownHandler = () => { inputState.mouse.isDown = true; };
+      const mouseupHandler = () => { inputState.mouse.isDown = false; };
       const mousemoveHandler = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        mouse.x = (e.clientX - rect.left) * scaleX;
-        mouse.y = (e.clientY - rect.top) * scaleY;
+        const wp = getMouseWorldPos(canvas, e.clientX, e.clientY);
+        inputState.mouse.x = wp.wx; inputState.mouse.y = wp.wy;
       };
 
       window.addEventListener('keydown', keydownHandler);
       window.addEventListener('keyup', keyupHandler);
       canvas.addEventListener('mousedown', mousedownHandler);
-      canvas.addEventListener('mouseup', mouseupHandler);
+      window.addEventListener('mouseup', mouseupHandler); // Canvas外で離した時のためWindowに設定
       canvas.addEventListener('mousemove', mousemoveHandler);
 
       activeEngineHandlers = { keydown: keydownHandler, keyup: keyupHandler, mousedown: mousedownHandler, mouseup: mouseupHandler, mousemove: mousemoveHandler };
 
-      let userInit = null;
-      let userUpdate = null;
+      const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, (msg) => addLog(msg, 'info'));
 
-      // --- 拡張された API 構造体 ---
-      const Engine = {
-        setInit: (fn) => { userInit = fn; },
-        setUpdate: (fn) => { userUpdate = fn; },
-        
-        clear: (color = '#000') => {
-          ctx.fillStyle = color;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        },
-        hasCostume: (name) => !!loadedImages[name],
-        hasSound: (name) => !!loadedSounds[name],
-        
-        // --- 基本描画API ---
-        draw: (name, x, y, width, height, angle = 0) => {
-          const img = loadedImages[name];
-          if (!img) return;
-          ctx.save();
-          ctx.translate(x + width / 2, y + height / 2);
-          ctx.rotate((angle * Math.PI) / 180);
-          ctx.drawImage(img, -width / 2, -height / 2, width, height);
-          ctx.restore();
-        },
-        drawRect: (x, y, w, h, color = '#fff', fill = true) => {
-          ctx.fillStyle = color;
-          ctx.strokeStyle = color;
-          if (fill) ctx.fillRect(x, y, w, h);
-          else ctx.strokeRect(x, y, w, h);
-        },
-        drawCircle: (x, y, r, color = '#fff', fill = true) => {
-          ctx.beginPath();
-          ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.fillStyle = color;
-          ctx.strokeStyle = color;
-          if (fill) ctx.fill();
-          else ctx.stroke();
-        },
-        drawText: (text, x, y, size = 20, color = '#fff') => {
-          ctx.fillStyle = color;
-          ctx.font = `bold ${size}px "Segoe UI", sans-serif`;
-          ctx.fillText(text, x, y);
-        },
-
-        // --- 🎉 新機能: 本格的なテキストボックス（会話ウィンドウ）描画 ---
-        drawTextBox: (text, x, y, width, height, options = {}) => {
-          const {
-            fontSize = 20, fontColor = '#fff',
-            bgColor = 'rgba(0, 0, 0, 0.8)', borderColor = '#fff', borderWidth = 2,
-            padding = 10, lineHeight = 1.5
-          } = options;
-
-          // 背景と枠線の描画
-          ctx.fillStyle = bgColor;
-          ctx.fillRect(x, y, width, height);
-          if (borderWidth > 0) {
-            ctx.strokeStyle = borderColor;
-            ctx.lineWidth = borderWidth;
-            ctx.strokeRect(x, y, width, height);
-          }
-
-          // 文字の描画設定
-          ctx.fillStyle = fontColor;
-          ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
-          ctx.textBaseline = 'top';
-
-          // 折り返し処理
-          const maxTextWidth = width - padding * 2;
-          let currentY = y + padding;
-          
-          // \nで明示的に改行された部分を分割
-          const lines = text.split('\n');
-
-          for (const paragraph of lines) {
-            let currentLine = '';
-            for (const char of paragraph) {
-              const testLine = currentLine + char;
-              const metrics = ctx.measureText(testLine);
-              if (metrics.width > maxTextWidth && currentLine !== '') {
-                ctx.fillText(currentLine, x + padding, currentY);
-                currentLine = char;
-                currentY += fontSize * lineHeight;
-              } else {
-                currentLine = testLine;
-              }
-            }
-            // 最後の行を描画
-            ctx.fillText(currentLine, x + padding, currentY);
-            currentY += fontSize * lineHeight;
-          }
-        },
-        
-        play: (name, volume = 1.0, loop = false) => {
-          const src = loadedSounds[name];
-          if (!src) return;
-          const audio = new Audio(src);
-          audio.volume = volume;
-          audio.loop = loop;
-          audio.play().catch(err => {});
-        },
-        
-        Input: {
-          getKey: (code) => !!keys[code],
-          getKeyDown: (code) => !!(keys[code] && !prevKeys[code]),
-          getKeyUp: (code) => !!(!keys[code] && prevKeys[code]),
-          getMouse: () => ({ ...mouse }),
-          getMouseDown: () => !!(mouse.isDown && !prevMouse.isDown)
-        },
-
-        Math: {
-          random: (min, max) => Math.random() * (max - min) + min,
-          
-          // --- 🎉 新機能: 便利ツール群 ---
-          lerp: (a, b, t) => a + (b - a) * t, // 滑らかに値を近づける補間
-          clamp: (val, min, max) => Math.max(min, Math.min(max, val)), // 値を範囲内に収める
-          deg2rad: (deg) => deg * Math.PI / 180, // 角度をラジアンに
-          rad2deg: (rad) => rad * 180 / Math.PI, // ラジアンを角度に
-          
-          // 指定した角度の方向へ進んだ新しい座標を返す
-          moveForward: (x, y, angleDeg, distance) => {
-            const rad = angleDeg * Math.PI / 180;
-            return { x: x + Math.cos(rad) * distance, y: y + Math.sin(rad) * distance };
-          },
-
-          // --- 🎉 新機能: 当たり判定 (Collision) ---
-          Collision: {
-            // 四角形 と 四角形
-            rectRect: (x1, y1, w1, h1, x2, y2, w2, h2) => {
-              return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
-            },
-            // 円 と 円
-            circleCircle: (x1, y1, r1, x2, y2, r2) => {
-              const dx = x2 - x1;
-              const dy = y2 - y1;
-              return (dx * dx + dy * dy) < ((r1 + r2) * (r1 + r2));
-            },
-            // 点 と 四角形 (マウスカーソルがボタンに乗っているか等に便利)
-            pointRect: (px, py, rx, ry, rw, rh) => {
-              return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
-            },
-            // 四角形 と 円 (プレイヤーと弾幕の判定などで大活躍！)
-            rectCircle: (rx, ry, rw, rh, cx, cy, cr) => {
-              let testX = cx;
-              let testY = cy;
-              
-              if (cx < rx) testX = rx;        // 左端より左
-              else if (cx > rx + rw) testX = rx + rw; // 右端より右
-              
-              if (cy < ry) testY = ry;        // 上端より上
-              else if (cy > ry + rh) testY = ry + rh; // 下端より下
-              
-              const distX = cx - testX;
-              const distY = cy - testY;
-              const distanceSquared = (distX * distX) + (distY * distY);
-              
-              return distanceSquared <= (cr * cr);
-            }
-          },
-
-          // (互換性維持のための古いラッパー)
-          distance: (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1),
-          isOverlap: (x1, y1, w1, h1, x2, y2, w2, h2) => {
-            return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
-          }
-        },
-        
-        log: (msg) => addLog(msg, 'info')
-      };
-
-      // コード評価
+      // ユーザーコード評価
       const fullCode = project.scripts.map(s => s.content).join('\n\n');
       try {
         const runUserCode = new Function('Engine', fullCode);
         runUserCode(Engine);
       } catch (err) {
         addLog(`コンパイルエラー: ${err.message}`, 'error');
-        stopGameEngine();
-        return;
+        stopGameEngine(); return;
       }
 
-      // 初期化関数の実行
-      if (userInit) {
-        try {
-          userInit();
-        } catch (err) {
-          addLog(`初期化エラー: ${err.message}`, 'error');
-          stopGameEngine();
-          return;
-        }
-      }
+      const initFn = Engine._getUserInit();
+      if (initFn) { try { initFn(); } catch (err) { addLog(`初期化エラー: ${err.message}`, 'error'); stopGameEngine(); return; } }
 
       addLog('ゲームが正常に開始されたよ！', 'success');
       isRunning = true;
-      btnRun.classList.add('hidden');
-      btnStop.classList.remove('hidden');
+      btnRun.classList.add('hidden'); btnStop.classList.remove('hidden');
 
-      // メインループ
+      const updateFn = Engine._getUserUpdate();
       let lastTime = performance.now();
+      
       function loop(currentTime) {
         const dt = (currentTime - lastTime) / 1000;
         lastTime = currentTime;
 
-        if (userUpdate) {
-          try {
-            userUpdate(dt);
-          } catch (err) {
-            addLog(`実行時エラー: ${err.message}`, 'error');
-            stopGameEngine();
-            return;
-          }
+        if (updateFn) {
+          try { updateFn(dt); } 
+          catch (err) { addLog(`実行時エラー: ${err.message}`, 'error'); stopGameEngine(); return; }
         }
 
-        // 入力状態を「前のフレームの状態」として保存する
-        Object.assign(prevKeys, keys);
-        prevMouse.isDown = mouse.isDown;
-
+        Object.assign(inputState.prevKeys, inputState.keys);
+        inputState.prevMouse.isDown = inputState.mouse.isDown;
         animationFrameId = requestAnimationFrame(loop);
       }
-
       animationFrameId = requestAnimationFrame(loop);
     }
 
-    renderTree();
-    setTimeout(() => { selectFile('script', 'main'); }, 500);
+    // --- 📦 Build Game 機能 ---
+    document.getElementById('btn-build-game').addEventListener('click', () => {
+      // 現在のプロジェクトデータを文字列化
+      const projectDataStr = JSON.stringify(project);
+      
+      // エンジンの実装・ユーティリティ群のコード文字列を抽出
+      // (このHTML内の関数群をそのまま埋め込む)
+      const engineCode = `
+        const getCanvasPos = ${getCanvasPos.toString()};
+        const getMouseWorldPos = ${getMouseWorldPos.toString()};
+        const createEngineAPI = ${createEngineAPI.toString()};
+      `;
+
+      const htmlContent = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Built Game</title>
+  <style>
+    body { margin: 0; background: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; font-family: sans-serif; }
+    #game-container { position: relative; width: 100%; max-width: 800px; aspect-ratio: 4/3; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+    canvas { background: #1e293b; width: 100%; height: 100%; display: block; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+  </div>
+  <script>
+    const project = ${projectDataStr};
+    
+    // --- Engine Utilities ---
+    ${engineCode}
+    
+    // --- Bootstrapper ---
+    (async function init() {
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+
+      const loadedImages = {};
+      for (const costume of project.costumes) {
+        const img = new Image(); img.src = costume.src;
+        await new Promise(r => { img.onload = r; img.onerror = r; });
+        loadedImages[costume.name] = img;
+      }
+      const loadedSounds = {};
+      for (const sound of project.sounds) loadedSounds[sound.name] = sound.src;
+
+      const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
+
+      window.addEventListener('keydown', e => inputState.keys[e.code] = true);
+      window.addEventListener('keyup', e => inputState.keys[e.code] = false);
+      canvas.addEventListener('mousedown', () => inputState.mouse.isDown = true);
+      window.addEventListener('mouseup', () => inputState.mouse.isDown = false);
+      canvas.addEventListener('mousemove', e => {
+        const wp = getMouseWorldPos(canvas, e.clientX, e.clientY);
+        inputState.mouse.x = wp.wx; inputState.mouse.y = wp.wy;
+      });
+
+      const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, (msg) => console.log("[Game Log]", msg));
+
+      const fullCode = project.scripts.map(s => s.content).join('\\n\\n');
+      try {
+        const runUserCode = new Function('Engine', fullCode);
+        runUserCode(Engine);
+      } catch (err) { console.error("Compile Error:", err); return; }
+
+      const initFn = Engine._getUserInit();
+      if (initFn) { try { initFn(); } catch (err) { console.error("Init Error:", err); } }
+
+      const updateFn = Engine._getUserUpdate();
+      let lastTime = performance.now();
+      
+      function loop(currentTime) {
+        const dt = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+        if (updateFn) {
+          try { updateFn(dt); } catch (err) { console.error("Update Error:", err); }
+        }
+        Object.assign(inputState.prevKeys, inputState.keys);
+        inputState.prevMouse.isDown = inputState.mouse.isDown;
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    })();
+  <\/script>
+</body>
+</html>`;
+
+      // Blobとしてダウンロード
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'my_built_game.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      addLog('遊べるHTMLファイルをビルドしてダウンロードしたよ！🚀', 'success');
+    });
 
   </script>
 </body>
