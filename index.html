@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Web Game Engine</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Monaco Editor (VSCodeと同じ高性能エディタ) を使って贅沢に仕上げるよ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+  <style>
+    /* エディタとプレビューの高さ調整 */
+    .editor-container {
+      height: calc(100vh - 48px);
+    }
+    /* スクロールバーのカスタマイズ */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- 隠しファイル入力 -->
+  <input type="file" id="file-input" class="hidden">
+
+  <!-- メインコンテナ -->
+  <div class="flex flex-1 h-full w-full overflow-hidden">
+    
+    <!-- --- 左ペイン：ツリー構造 --- -->
+    <div class="w-64 bg-slate-800 border-r border-slate-700 flex flex-col">
+      <div class="p-4 border-b border-slate-700 flex items-center gap-2 text-emerald-400 font-bold text-lg">
+        <i class="fas fa-gamepad"></i>
+        <span>2D Engine Desktop</span>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto p-2 space-y-4">
+        <!-- スクリプト -->
+        <div>
+          <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-bold px-2 mb-2">
+            <span>Scripts</span>
+            <button id="btn-add-script" class="hover:text-white transition-colors" title="スクリプトを追加">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div id="scripts-list" class="space-y-1">
+            <!-- 動的に追加されます -->
+          </div>
+        </div>
+
+        <!-- コスチューム -->
+        <div>
+          <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-bold px-2 mb-2">
+            <span>Costumes</span>
+            <button id="btn-add-costume" class="hover:text-white transition-colors" title="画像をアップロード">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div id="costumes-list" class="space-y-1">
+            <!-- 動的に追加されます -->
+          </div>
+        </div>
+
+        <!-- サウンド -->
+        <div>
+          <div class="flex justify-between items-center text-xs text-slate-400 uppercase font-bold px-2 mb-2">
+            <span>Sounds</span>
+            <button id="btn-add-sound" class="hover:text-white transition-colors" title="音声をアップロード">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div id="sounds-list" class="space-y-1">
+            <!-- 動的に追加されます -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- --- 中央ペイン：コードエディタ --- -->
+    <div class="flex-1 flex flex-col bg-[#1e1e1e]">
+      <div class="h-12 bg-[#252526] border-b border-[#3c3c3c] flex items-center justify-between px-4 text-sm font-medium">
+        <div id="editor-title" class="flex items-center">
+          <!-- 選択中のファイル名 -->
+        </div>
+        <div class="text-xs text-slate-400">Ctrl+S / Cmd+S で保存</div>
+      </div>
+      
+      <!-- エディタ表示領域 -->
+      <div class="flex-1 relative">
+        <div id="monaco-editor-container" class="absolute inset-0 w-full h-full"></div>
+        <div id="asset-preview-container" class="absolute inset-0 w-full h-full bg-slate-900/90 flex flex-col items-center justify-center gap-4 hidden">
+          <!-- アセットプレビュー用 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- --- 右ペイン：プレビュー＆コンソール --- -->
+    <div class="w-[450px] bg-slate-950 flex flex-col border-l border-slate-800">
+      <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+        <span class="font-bold text-sm text-slate-300">Preview</span>
+        <div class="flex gap-2">
+          <button id="btn-run" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
+            <i class="fas fa-play"></i> Run
+          </button>
+          <button id="btn-stop" class="bg-rose-500 hover:bg-rose-400 text-white px-4 py-1.5 rounded-md text-sm font-bold flex items-center gap-2 transition-colors hidden">
+            <i class="fas fa-stop"></i> Stop
+          </button>
+        </div>
+      </div>
+      
+      <!-- ゲームキャンバス -->
+      <div class="p-4 flex-1 flex flex-col">
+        <div class="w-full aspect-[4/3] bg-black rounded shadow-lg overflow-hidden border border-slate-800 relative">
+          <canvas id="game-canvas" width="800" height="600" class="w-full h-full block bg-[#1e293b]"></canvas>
+        </div>
+
+        <!-- ログコンソール -->
+        <div class="mt-4 flex-1 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden">
+          <div class="px-3 py-1.5 bg-slate-800 text-xs font-bold text-slate-400 flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fas fa-terminal"></i> Console</span>
+            <button id="btn-clear-console" class="hover:text-white text-slate-500 transition-colors" title="ログをクリア">
+              <i class="fas fa-trash-can"></i>
+            </button>
+          </div>
+          <div id="console-logs" class="flex-1 p-2 overflow-y-auto text-xs font-mono space-y-1 bg-slate-950">
+            <div class="text-slate-600">No logs yet...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- --- アプリケーションロジック --- -->
+  <script>
+    // 初期状態のゲームスクリプト
+    const initialCode = `// プレイヤーの初期設定
+let x = 400;
+let y = 300;
+let angle = 0;
+
+// 毎フレーム実行されるループ関数を設定
+Engine.setUpdate((dt) => {
+  // 背景を指定した色で塗りつぶすよ
+  Engine.clear('#1e293b');
+
+  // キーボード入力による移動処理
+  const speed = 300 * dt;
+  if (Engine.Input.getKey('ArrowRight')) x += speed;
+  if (Engine.Input.getKey('ArrowLeft')) x -= speed;
+  if (Engine.Input.getKey('ArrowUp')) y -= speed;
+  if (Engine.Input.getKey('ArrowDown')) y += speed;
+
+  // コスチューム「player」がアップロードされていたら、それを描画
+  if (Engine.hasCostume('player')) {
+    angle += 45 * dt; // くるくる回すよ
+    Engine.draw('player', x - 32, y - 32, 64, 64, angle);
+  } else {
+    // なければ代わりにロケットの絵文字を表示！
+    Engine.drawText('🚀', x - 25, y + 15, 50);
+  }
+
+  // 操作ガイドの表示
+  Engine.drawText('Arrow keys to move', 20, 40, 20, '#94a3b8');
+  Engine.drawText('Click canvas to play sound', 20, 70, 16, '#64748b');
+  
+  // マウスがクリックされた時の音鳴らし
+  if (Engine.Input.getMouse().isDown) {
+    if (Engine.hasSound('jump')) {
+      Engine.play('jump');
+    }
+    Engine.drawText('Click!', Engine.Input.getMouse().x, Engine.Input.getMouse().y, 24, '#facc15');
+  }
+});`;
+
+    // プロジェクトデータ管理
+    const project = {
+      scripts: [
+        { id: 'main', name: 'main', content: initialCode }
+      ],
+      costumes: [],
+      sounds: []
+    };
+
+    let activeFile = { type: 'script', id: 'main' };
+    let editor = null;
+    let isRunning = false;
+    let animationFrameId = null;
+    let activeEngineHandlers = null;
+
+    // Monaco Editor の初期化
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
+    require(['vs/editor/editor.main'], function () {
+      editor = monaco.editor.create(document.getElementById('monaco-editor-container'), {
+        value: project.scripts[0].content,
+        language: 'javascript',
+        theme: 'vs-dark',
+        automaticLayout: true,
+        fontSize: 14,
+        minimap: { enabled: false }
+      });
+
+      // エディタの値が変更されたら保存
+      editor.onDidChangeModelContent(() => {
+        if (activeFile.type === 'script') {
+          const script = project.scripts.find(s => s.id === activeFile.id);
+          if (script) {
+            script.content = editor.getValue();
+          }
+        }
+      });
+    });
+
+    // ログ表示
+    const consoleLogs = document.getElementById('console-logs');
+    function addLog(msg, type = 'info') {
+      if (consoleLogs.innerHTML.includes('No logs yet...')) {
+        consoleLogs.innerHTML = '';
+      }
+      const div = document.createElement('div');
+      const time = new Date().toLocaleTimeString();
+      div.className = `py-0.5 ${type === 'error' ? 'text-rose-400' : type === 'success' ? 'text-emerald-400' : 'text-slate-300'}`;
+      div.innerHTML = `<span class="opacity-50 mr-2">[${time}]</span>${escapeHtml(msg)}`;
+      consoleLogs.appendChild(div);
+      consoleLogs.scrollTop = consoleLogs.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    document.getElementById('btn-clear-console').addEventListener('click', () => {
+      consoleLogs.innerHTML = '<div class="text-slate-600">No logs yet...</div>';
+    });
+
+    // リソースツリーのUI再描画
+    function renderTree() {
+      // Scripts 一覧
+      const scriptsList = document.getElementById('scripts-list');
+      scriptsList.innerHTML = '';
+      project.scripts.forEach(s => {
+        const activeClass = (activeFile.type === 'script' && activeFile.id === s.id) ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
+        scriptsList.innerHTML += `
+          <div onclick="selectFile('script', '${s.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
+            <span class="flex items-center gap-2 truncate text-sm">
+              <i class="fab fa-js text-yellow-400 w-4"></i>
+              <span>${s.name}.js</span>
+            </span>
+            ${s.id !== 'main' ? `<button onclick="event.stopPropagation(); deleteFile('script', '${s.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>` : ''}
+          </div>
+        `;
+      });
+
+      // Costumes 一覧
+      const costumesList = document.getElementById('costumes-list');
+      costumesList.innerHTML = '';
+      project.costumes.forEach(c => {
+        const activeClass = (activeFile.type === 'costume' && activeFile.id === c.id) ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
+        costumesList.innerHTML += `
+          <div onclick="selectFile('costume', '${c.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
+            <span class="flex items-center gap-2 truncate text-sm">
+              <i class="fas fa-image text-purple-400 w-4"></i>
+              <span>${c.name}</span>
+            </span>
+            <button onclick="event.stopPropagation(); deleteFile('costume', '${c.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>
+          </div>
+        `;
+      });
+
+      // Sounds 一覧
+      const soundsList = document.getElementById('sounds-list');
+      soundsList.innerHTML = '';
+      project.sounds.forEach(s => {
+        const activeClass = (activeFile.type === 'sound' && activeFile.id === s.id) ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
+        soundsList.innerHTML += `
+          <div onclick="selectFile('sound', '${s.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
+            <span class="flex items-center gap-2 truncate text-sm">
+              <i class="fas fa-music text-pink-400 w-4"></i>
+              <span>${s.name}</span>
+            </span>
+            <button onclick="event.stopPropagation(); deleteFile('sound', '${s.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>
+          </div>
+        `;
+      });
+    }
+
+    // ファイル選択処理
+    window.selectFile = function(type, id) {
+      activeFile = { type, id };
+      renderTree();
+
+      const editorEl = document.getElementById('monaco-editor-container');
+      const previewEl = document.getElementById('asset-preview-container');
+      const titleEl = document.getElementById('editor-title');
+
+      if (type === 'script') {
+        editorEl.classList.remove('hidden');
+        previewEl.classList.add('hidden');
+        const script = project.scripts.find(s => s.id === id);
+        if (script && editor) {
+          editor.setValue(script.content);
+        }
+        titleEl.innerHTML = `<i class="fab fa-js text-yellow-400 mr-2"></i> ${script.name}.js`;
+      } else if (type === 'costume') {
+        editorEl.classList.add('hidden');
+        previewEl.classList.remove('hidden');
+        const costume = project.costumes.find(c => c.id === id);
+        titleEl.innerHTML = `<i class="fas fa-image text-purple-400 mr-2"></i> ${costume.name}`;
+        previewEl.innerHTML = `
+          <img src="${costume.src}" alt="${costume.name}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">
+          <span class="text-xs text-slate-400">解像度: 自動検出中</span>
+        `;
+      } else if (type === 'sound') {
+        editorEl.classList.add('hidden');
+        previewEl.classList.remove('hidden');
+        const sound = project.sounds.find(s => s.id === id);
+        titleEl.innerHTML = `<i class="fas fa-music text-pink-400 mr-2"></i> ${sound.name}`;
+        previewEl.innerHTML = `
+          <div class="bg-slate-800 p-6 rounded-lg flex flex-col items-center gap-4">
+            <i class="fas fa-volume-high text-5xl text-pink-400 animate-bounce"></i>
+            <audio controls src="${sound.src}" class="w-64"></audio>
+          </div>
+        `;
+      }
+    };
+
+    // ファイル削除
+    window.deleteFile = function(type, id) {
+      if (type === 'script') {
+        project.scripts = project.scripts.filter(s => s.id !== id);
+      } else if (type === 'costume') {
+        project.costumes = project.costumes.filter(c => c.id !== id);
+      } else if (type === 'sound') {
+        project.sounds = project.sounds.filter(s => s.id !== id);
+      }
+
+      // 削除したファイルがアクティブだった場合はメインに切り替え
+      if (activeFile.id === id) {
+        selectFile('script', 'main');
+      } else {
+        renderTree();
+      }
+    };
+
+    // 新規スクリプト作成
+    document.getElementById('btn-add-script').addEventListener('click', () => {
+      const name = prompt("スクリプト名を入力してください (英数字):", `actor_${project.scripts.length + 1}`);
+      if (!name) return;
+      const cleanName = name.replace(/[^a-zA-Z0-9_]/g, '');
+      const id = 'script_' + Date.now();
+      project.scripts.push({
+        id,
+        name: cleanName,
+        content: `// ${cleanName} の行動処理\n`
+      });
+      selectFile('script', id);
+    });
+
+    // コスチュームとサウンドのアップロード
+    const fileInput = document.getElementById('file-input');
+    let uploadTarget = 'costume';
+
+    document.getElementById('btn-add-costume').addEventListener('click', () => {
+      uploadTarget = 'costume';
+      fileInput.accept = 'image/*';
+      fileInput.click();
+    });
+
+    document.getElementById('btn-add-sound').addEventListener('click', () => {
+      uploadTarget = 'sound';
+      fileInput.accept = 'audio/*';
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const src = event.target.result;
+        const name = file.name.split('.')[0].replace(/[^a-zA-Z0-9_]/g, '');
+        const id = 'asset_' + Date.now();
+
+        if (uploadTarget === 'costume') {
+          project.costumes.push({ id, name, src });
+          addLog(`コスチューム「${name}」をアップロードしました。`, 'success');
+        } else {
+          project.sounds.push({ id, name, src });
+          addLog(`サウンド「${name}」をアップロードしました。`, 'success');
+        }
+        renderTree();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // --- ゲームエンジンの実行制御 ---
+    const btnRun = document.getElementById('btn-run');
+    const btnStop = document.getElementById('btn-stop');
+
+    btnRun.addEventListener('click', () => {
+      startGameEngine();
+    });
+
+    btnStop.addEventListener('click', () => {
+      stopGameEngine();
+    });
+
+    function stopGameEngine() {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      if (activeEngineHandlers) {
+        window.removeEventListener('keydown', activeEngineHandlers.keydown);
+        window.removeEventListener('keyup', activeEngineHandlers.keyup);
+        const canvas = document.getElementById('game-canvas');
+        canvas.removeEventListener('mousedown', activeEngineHandlers.mousedown);
+        canvas.removeEventListener('mouseup', activeEngineHandlers.mouseup);
+        canvas.removeEventListener('mousemove', activeEngineHandlers.mousemove);
+        activeEngineHandlers = null;
+      }
+
+      isRunning = false;
+      btnRun.classList.remove('hidden');
+      btnStop.classList.add('hidden');
+      addLog('ゲームを停止しました。');
+    }
+
+    async function startGameEngine() {
+      stopGameEngine();
+      addLog('ゲームをロード中...', 'info');
+
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // コスチューム画像のキャッシュロード
+      const loadedImages = {};
+      for (const costume of project.costumes) {
+        const img = new Image();
+        img.src = costume.src;
+        await new Promise((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => {
+            addLog(`画像の読み込みに失敗しました: ${costume.name}`, 'error');
+            resolve();
+          };
+        });
+        loadedImages[costume.name] = img;
+      }
+
+      // サウンドのプール
+      const loadedSounds = {};
+      for (const sound of project.sounds) {
+        loadedSounds[sound.name] = sound.src; // DataURLをストック
+      }
+
+      // 入力デバイス管理
+      const keys = {};
+      const mouse = { x: 0, y: 0, isDown: false };
+
+      const keydownHandler = (e) => { keys[e.code] = true; };
+      const keyupHandler = (e) => { keys[e.code] = false; };
+      const mousedownHandler = (e) => { mouse.isDown = true; };
+      const mouseupHandler = (e) => { mouse.isDown = false; };
+      const mousemoveHandler = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        mouse.x = (e.clientX - rect.left) * scaleX;
+        mouse.y = (e.clientY - rect.top) * scaleY;
+      };
+
+      window.addEventListener('keydown', keydownHandler);
+      window.addEventListener('keyup', keyupHandler);
+      canvas.addEventListener('mousedown', mousedownHandler);
+      canvas.addEventListener('mouseup', mouseupHandler);
+      canvas.addEventListener('mousemove', mousemoveHandler);
+
+      activeEngineHandlers = {
+        keydown: keydownHandler,
+        keyup: keyupHandler,
+        mousedown: mousedownHandler,
+        mouseup: mouseupHandler,
+        mousemove: mousemoveHandler
+      };
+
+      let userUpdate = null;
+
+      // ユーザーに見せるAPI構造体の構築
+      const Engine = {
+        clear: (color = '#000') => {
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        },
+        hasCostume: (name) => !!loadedImages[name],
+        hasSound: (name) => !!loadedSounds[name],
+        draw: (name, x, y, width, height, angle = 0) => {
+          const img = loadedImages[name];
+          if (!img) return;
+          ctx.save();
+          // 指定座標を基準に回転
+          ctx.translate(x + width / 2, y + height / 2);
+          ctx.rotate((angle * Math.PI) / 180);
+          ctx.drawImage(img, -width / 2, -height / 2, width, height);
+          ctx.restore();
+        },
+        drawText: (text, x, y, size = 20, color = '#fff') => {
+          ctx.fillStyle = color;
+          ctx.font = `bold ${size}px "Segoe UI", sans-serif`;
+          ctx.fillText(text, x, y);
+        },
+        play: (name, volume = 1.0, loop = false) => {
+          const src = loadedSounds[name];
+          if (!src) return;
+          const audio = new Audio(src);
+          audio.volume = volume;
+          audio.loop = loop;
+          audio.play().catch(err => {
+            // 自動再生ポリシーなどのエラーハンドリング
+          });
+        },
+        setUpdate: (fn) => { userUpdate = fn; },
+        Input: {
+          getKey: (code) => !!keys[code],
+          getMouse: () => ({ ...mouse })
+        },
+        log: (msg) => addLog(msg, 'info')
+      };
+
+      // ユーザーの全スクリプトを安全に評価
+      const fullCode = project.scripts.map(s => s.content).join('\n\n');
+      try {
+        const runUserCode = new Function('Engine', fullCode);
+        runUserCode(Engine);
+      } catch (err) {
+        addLog(`スクリプトコンパイルエラー: ${err.message}`, 'error');
+        stopGameEngine();
+        return;
+      }
+
+      addLog('ゲームが正常に開始されました！', 'success');
+      isRunning = true;
+      btnRun.classList.add('hidden');
+      btnStop.classList.remove('hidden');
+
+      // メインのゲームループ
+      let lastTime = performance.now();
+      function loop(currentTime) {
+        const dt = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        if (userUpdate) {
+          try {
+            userUpdate(dt);
+          } catch (err) {
+            addLog(`ループ内実行エラー: ${err.message}`, 'error');
+            stopGameEngine();
+            return;
+          }
+        }
+        animationFrameId = requestAnimationFrame(loop);
+      }
+
+      animationFrameId = requestAnimationFrame(loop);
+    }
+
+    // 初期化ロード
+    renderTree();
+    setTimeout(() => {
+      selectFile('script', 'main');
+    }, 500);
+
+  </script>
+</body>
+</html>
