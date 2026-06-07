@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>2D Web Game Engine</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,6 +11,11 @@
   <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
   <style>
+    /* iOS Safari等のツールバー被り対策に dvh を適用 */
+    .h-safe-screen {
+      height: 100vh;
+      height: 100dvh;
+    }
     .editor-container { height: calc(100vh - 48px); }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #1e293b; }
@@ -19,7 +24,7 @@
     .doc-code { background: #0f172a; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; color: #38bdf8; display: inline-block; margin-bottom: 2px;}
   </style>
 </head>
-<body class="bg-slate-900 text-slate-200 font-sans h-screen flex flex-col overflow-hidden select-none">
+<body class="bg-slate-900 text-slate-200 font-sans h-safe-screen flex flex-col overflow-hidden select-none">
 
   <!-- 隠しファイル入力 -->
   <input type="file" id="file-input" class="hidden">
@@ -263,7 +268,7 @@ Engine.setUpdate((dt) => {
   if (Engine.Input.getKey('ArrowRight')) player.x += speed;
   if (Engine.Input.getKey('ArrowLeft')) player.x -= speed;
   if (Engine.Input.getKey('ArrowUp')) player.y += speed;
-  if (Engine.Input.getKey('ArrowDown')) player.y -= speed;
+  if (Engine.Input.getKey('ArrowDown')) player.y += speed;
 
   // 画面端から出ないように制限 (X:-400~400, Y:-300~300)
   // 画像も「中心基準」で描かれるので、端っこは w/2, h/2 分ずらすよ。
