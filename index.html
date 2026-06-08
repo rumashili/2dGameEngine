@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+  <!-- JSZip (ZIPパッケージング用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     /* iOS Safari等のツールバー被り対策に dvh を適用 */
     .h-safe-screen {
@@ -219,8 +221,8 @@
           <div class="w-px h-5 bg-[#3c3c3c] mx-1"></div>
 
           <!-- Build Game -->
-          <button id="btn-build-game" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1.5 shadow" title="遊べるHTMLを出力">
-            <i class="fas fa-box"></i> Build Game
+          <button id="btn-build-game" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-1.5 shadow" title="ZIP形式でゲームを出力">
+            <i class="fas fa-file-zipper"></i> Build Game (ZIP)
           </button>
 
           <!-- Docs -->
@@ -925,13 +927,66 @@ Engine.setUpdate((dt) => {
       animationFrameId = requestAnimationFrame(loop);
     }
 
-    // --- 📦 Build Game 機能 ---
-    document.getElementById('btn-build-game').addEventListener('click', () => {
-      // 現在のプロジェクトデータを文字列化
-      const projectDataStr = JSON.stringify(project);
+    // --- 📦 Build Game (ZIP) 機能 ---
+    function getExtensionFromMime(mime) {
+      if (mime.includes('png')) return 'png';
+      if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpg';
+      if (mime.includes('gif')) return 'gif';
+      if (mime.includes('svg')) return 'svg';
+      if (mime.includes('mp3') || mime.includes('mpeg')) return 'mp3';
+      if (mime.includes('wav')) return 'wav';
+      if (mime.includes('ogg')) return 'ogg';
+      return 'bin';
+    }
+
+    document.getElementById('btn-build-game').addEventListener('click', async () => {
+      addLog('ゲームのパッケージング(ZIP)を開始するよ...', 'info');
       
-      // エンジンの実装・ユーティリティ群のコード文字列を抽出
-      // (このHTML内の関数群をそのまま埋め込む)
+      if (typeof JSZip === 'undefined') {
+        addLog('JSZipライブラリが読み込まれていません。', 'error');
+        return;
+      }
+
+      const zip = new JSZip();
+      const scriptFolder = zip.folder("script");
+      const costumeFolder = zip.folder("costume");
+      const soundFolder = zip.folder("sound");
+
+      // 画像アセットの抽出と保存
+      const costumeList = [];
+      project.costumes.forEach(costume => {
+        const match = costume.src.match(/^data:(image\/[a-zA-Z0-9\-+]+);base64,(.+)$/);
+        if (match) {
+          const ext = getExtensionFromMime(match[1]);
+          const fileName = `${costume.name}.${ext}`;
+          costumeFolder.file(fileName, match[2], {base64: true});
+          costumeList.push({ name: costume.name, path: `costume/${fileName}` });
+        }
+      });
+
+      // 音声アセットの抽出と保存
+      const soundList = [];
+      project.sounds.forEach(sound => {
+        const match = sound.src.match(/^data:(audio\/[a-zA-Z0-9\-+]+);base64,(.+)$/);
+        if (match) {
+          const ext = getExtensionFromMime(match[1]);
+          const fileName = `${sound.name}.${ext}`;
+          soundFolder.file(fileName, match[2], {base64: true});
+          soundList.push({ name: sound.name, path: `sound/${fileName}` });
+        }
+      });
+
+      // スクリプトの抽出と保存
+      const scriptList = [];
+      project.scripts.forEach(script => {
+        const fileName = `${script.name}.js`;
+        // 各スクリプトが独立したスコープを持ちつつ、Engineオブジェクトを受け取れるように関数でラップする
+        const wrappedContent = `window._registerGameScript(function(Engine) {\n${script.content}\n});`;
+        scriptFolder.file(fileName, wrappedContent);
+        scriptList.push(`script/${fileName}`);
+      });
+
+      // エンジンロジックの抽出
       const engineCode = `
         const getCanvasPos = ${getCanvasPos.toString()};
         const getMouseWorldPos = ${getMouseWorldPos.toString()};
@@ -939,6 +994,9 @@ Engine.setUpdate((dt) => {
         const getMouseWorldPosCamera = ${getMouseWorldPosCamera.toString()};
         const createEngineAPI = ${createEngineAPI.toString()};
       `;
+
+      // HTMLから各スクリプトを読み込むためのタグを生成
+      let scriptTags = scriptList.map(path => `<script src="${path}"><\/script>`).join('\n  ');
 
       const htmlContent = `<!DOCTYPE html>
 <html lang="ja">
@@ -951,30 +1009,43 @@ Engine.setUpdate((dt) => {
     #game-container { position: relative; width: 100%; max-width: 800px; aspect-ratio: 4/3; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
     canvas { background: #1e293b; width: 100%; height: 100%; display: block; border-radius: 8px; }
   </style>
+  <script>
+    // 外部スクリプトファイルを受け取るための配列と登録関数
+    window._gameScripts = [];
+    window._registerGameScript = function(fn) {
+      window._gameScripts.push(fn);
+    };
+  <\/script>
+  <!-- 各スクリプトファイルの読み込み -->
+  ${scriptTags}
 </head>
 <body>
   <div id="game-container">
     <canvas id="game-canvas" width="800" height="600"></canvas>
   </div>
   <script>
-    const project = ${projectDataStr};
-    
     // --- Engine Utilities ---
-    \${engineCode}
+    ${engineCode}
     
     // --- Bootstrapper ---
     (async function init() {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
 
+      const costumeData = ${JSON.stringify(costumeList)};
+      const soundData = ${JSON.stringify(soundList)};
+
       const loadedImages = {};
-      for (const costume of project.costumes) {
-        const img = new Image(); img.src = costume.src;
+      for (const costume of costumeData) {
+        const img = new Image(); img.src = costume.path;
         await new Promise(r => { img.onload = r; img.onerror = r; });
         loadedImages[costume.name] = img;
       }
+      
       const loadedSounds = {};
-      for (const sound of project.sounds) loadedSounds[sound.name] = sound.src;
+      for (const sound of soundData) {
+        loadedSounds[sound.name] = sound.path;
+      }
 
       const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
       const cameraState = { x: 0, y: 0, zoom: 1 };
@@ -991,13 +1062,12 @@ Engine.setUpdate((dt) => {
 
       const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, (msg) => console.log("[Game Log]", msg));
 
-      // 個別評価に変更
+      // 読み込まれた各スクリプトにEngineを渡して実行
       let compileError = false;
-      project.scripts.forEach(script => {
+      window._gameScripts.forEach((runUserCode, idx) => {
         try {
-          const runUserCode = new Function('Engine', script.content);
           runUserCode(Engine);
-        } catch (err) { console.error("[" + script.name + "] Compile Error:", err); compileError = true; }
+        } catch (err) { console.error("Script Execution Error in file " + idx + ":", err); compileError = true; }
       });
       if(compileError) return;
 
@@ -1026,18 +1096,25 @@ Engine.setUpdate((dt) => {
 </body>
 </html>`;
 
-      // Blobとしてダウンロード
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'my_built_game.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      addLog('遊べるHTMLファイルをビルドしてダウンロードしたよ！🚀', 'success');
+      // 組み立てたHTMLをZIPのルートに追加
+      zip.file("index.html", htmlContent);
+
+      // ZIPファイルの生成とダウンロード
+      zip.generateAsync({type:"blob"}).then(function(content) {
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'my_built_game.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        addLog('遊べるゲーム一式をZIPでビルドしてダウンロードしたよ！🚀', 'success');
+      }).catch(err => {
+        addLog('ZIPファイルの生成に失敗しちゃったみたい。', 'error');
+        console.error(err);
+      });
     });
 
     // --- ↔️ ペインのリサイズ機能 ---
