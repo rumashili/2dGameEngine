@@ -88,6 +88,17 @@
           </ul>
         </section>
 
+        <!-- セクション: 入力 -->
+        <section>
+          <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">⌨️ 入力 (Input)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.Input.getKey('KeyName')</span> : キーが <strong class="text-emerald-300">押されている間ずっと</strong> true を返すよ。（例: 'ArrowRight', 'Space', 'KeyW'）</li>
+            <li><span class="doc-code">Engine.Input.getKeyDown('KeyName')</span> : キーが <strong class="text-emerald-300">押された瞬間だけ</strong> true を返すよ。</li>
+            <li><span class="doc-code">Engine.Input.getMouse()</span> : マウスの現在座標をワールド座標系（中心が0,0、上が+Y）の <span class="doc-code">{ x, y, isDown }</span> で取得するよ。</li>
+            <li><span class="doc-code">Engine.Input.getMouseDown()</span> : マウスがクリックされた瞬間だけ true を返すよ。</li>
+          </ul>
+        </section>
+
         <!-- セクション: 当たり判定 -->
         <section>
           <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">💥 当たり判定 (Collision)</h3>
@@ -97,6 +108,36 @@
             <li><span class="doc-code">Engine.Math.Collision.circleCircle(x1, y1, r1, x2, y2, r2)</span></li>
             <li><span class="doc-code">Engine.Math.Collision.rectCircle(rx, ry, rw, rh, cx, cy, cr)</span></li>
             <li><span class="doc-code">Engine.Math.Collision.pointRect(px, py, rx, ry, rw, rh)</span></li>
+          </ul>
+        </section>
+
+        <!-- セクション: チート級API・裏技 -->
+        <section>
+          <h3 class="text-lg font-bold text-fuchsia-400 border-b border-slate-600 pb-2 mb-3">🔥 チート級・裏技API (使うな危険!? 褒め言葉)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.drawLine(x1, y1, x2, y2, color, width)</span> : 自由に直線を引けるよ。レーザーやワイヤーアクションに！</li>
+            <li><span class="doc-code">Engine.Camera.x / y / zoom</span> : カメラの位置や拡大率。これを動かすだけで画面全体がスクロールしたりズームするよ！</li>
+            <li><span class="doc-code">Engine.Effect.shake(power)</span> : ダメージを受けた時などに画面を揺らすド迫力エフェクト！</li>
+            <li><span class="doc-code">Engine.Math.angleBetween(x1, y1, x2, y2)</span> : 2点間の「角度(度数)」を一発で計算。敵がプレイヤーを正確に狙う弾を作るのに必須！</li>
+            <li><span class="doc-code">Engine.Math.distance(x1, y1, x2, y2)</span> : 2点間の距離を一発で計算。</li>
+            <li><span class="doc-code">Engine.Storage.save(key, val) / load(key, defVal)</span> : ブラウザを閉じても消えないセーブデータを1行で実装！</li>
+            <li><span class="doc-code">Engine.Time.frameCount / time / deltaTime</span> : フレーム数や経過時間を取得。</li>
+            <li><span class="doc-code">Engine.drawUIText(text, x, y, size, color)</span> : カメラの移動やズームを無視して、常に画面の同じ位置に文字を描画するよ！</li>
+          </ul>
+        </section>
+
+        <!-- セクション: コールバック＆メッセージ -->
+        <section>
+          <h3 class="text-lg font-bold text-sky-400 border-b border-slate-600 pb-2 mb-3">📞 コールバック＆メッセージ (イベント)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.onClick( (x, y) => { ... } )</span> : マウスがクリックされた瞬間に呼ばれるよ。</li>
+            <li><span class="doc-code">Engine.onKeyDown( (key) => { ... } )</span> : キーが押された瞬間に呼ばれるよ。</li>
+            <li><span class="doc-code">Engine.onKeyUp( (key) => { ... } )</span> : キーが離された瞬間に呼ばれるよ。</li>
+            <li><span class="doc-code">Engine.sendMessage('eventName', data)</span> : 別のスクリプトファイルへメッセージとデータを送るよ！</li>
+            <li><span class="doc-code">Engine.receiveMessage('eventName', (data) => { ... })</span> : 別のスクリプトから送られたメッセージを受け取るよ！</li>
+            <div class="bg-slate-700/50 p-3 rounded text-emerald-300 text-xs mt-2 border border-emerald-500/30">
+              <i class="fas fa-lightbulb"></i> <strong>独立スコープ化：</strong>各スクリプトファイルは完全に独立しています！複数のスクリプトで同じ変数名（<code>let player = 0;</code> 等）を使ってもエラーになりません。また、複数のスクリプトで <code>Engine.setUpdate</code> などを書いても、上書きされずに全て同時に動きます！
+            </div>
           </ul>
         </section>
 
@@ -258,6 +299,21 @@ Engine.setInit(() => {
   Engine.log("新座標系のデモを開始！🚀");
 });
 
+// 新機能：コールバックでクリックイベントを取る！
+Engine.onClick((x, y) => {
+  enemyCircle.x = x;
+  enemyCircle.y = y;
+  Engine.log('Click! ワープしたよ: ' + Math.floor(x) + ', ' + Math.floor(y));
+  
+  // 新機能：画面揺らし（チート級演出！）
+  Engine.Effect.shake(20);
+});
+
+// 新機能：メッセージを受け取る例
+Engine.receiveMessage('addScore', (data) => {
+  score += data.points;
+});
+
 Engine.setUpdate((dt) => {
   Engine.clear('#1e293b');
 
@@ -268,23 +324,18 @@ Engine.setUpdate((dt) => {
   if (Engine.Input.getKey('ArrowRight')) player.x += speed;
   if (Engine.Input.getKey('ArrowLeft')) player.x -= speed;
   if (Engine.Input.getKey('ArrowUp')) player.y += speed;
-  if (Engine.Input.getKey('ArrowDown')) player.y += speed;
+  if (Engine.Input.getKey('ArrowDown')) player.y -= speed;
 
   // 画面端から出ないように制限 (X:-400~400, Y:-300~300)
-  // 画像も「中心基準」で描かれるので、端っこは w/2, h/2 分ずらすよ。
   player.x = Engine.Math.clamp(player.x, -400 + player.w/2, 400 - player.w/2);
   player.y = Engine.Math.clamp(player.y, -300 + player.h/2, 300 - player.h/2);
 
   // 敵（円）は滑らかにマウスに追従
   enemyCircle.x = Engine.Math.lerp(enemyCircle.x, mouse.x, 0.05);
   enemyCircle.y = Engine.Math.lerp(enemyCircle.y, mouse.y, 0.05);
-  
-  // マウスクリックでパーティクル風に飛ばす
-  if (Engine.Input.getMouseDown()) {
-    enemyCircle.x = Engine.Math.random(-300, 300);
-    enemyCircle.y = Engine.Math.random(-200, 200);
-    Engine.log('Click! ワープしたよ');
-  }
+
+  // 新機能：レーザー描画！（LineAPI）
+  Engine.drawLine(player.x, player.y, enemyCircle.x, enemyCircle.y, '#f59e0b', 4);
 
   // 四角(中心基準) と 円(中心基準) の当たり判定
   let isColliding = Engine.Math.Collision.rectCircle(
@@ -304,15 +355,25 @@ Engine.setUpdate((dt) => {
   if (showDialogue) {
     // 画面中央 (0, -100) を中心としてダイアログを描画
     Engine.drawTextBox(
-      "【v2アップデート！】\\n・画面の中心が (0,0) になったよ！\\n・上が+y、右が+x の数学座標系だよ！\\n・図形も画像も「中心」を基準に描画されるよ！\\n・ブラウザに自動保存＆Build Game搭載！",
+      "【連携＆独立アップデート！】\\n・別のファイルで同じ変数名を使ってもエラーにならない！\\n・sendMessage / receiveMessage で連携可能！\\n・スクリプトを追加して試してみてね！\\n※Enterキーで閉じるよ。",
       0, -100, 600, 180,
       { fontSize: 22, fontColor: '#f8fafc', bgColor: 'rgba(15, 23, 42, 0.85)', borderColor: '#38bdf8', borderWidth: 3, padding: 20 }
     );
-    if (Engine.Input.getKeyDown('Enter')) showDialogue = false;
+    if (Engine.Input.getKeyDown('Enter')) {
+      showDialogue = false;
+      // 他のスクリプトにメッセージを送る例
+      Engine.sendMessage('addScore', { points: 100 });
+    }
   }
 
   // UI (左上に表示。左上は X:-380, Y:260 あたり)
-  Engine.drawText('Arrow: Move / Mouse: Target', -230, 260, 18, '#94a3b8');
+  // drawUIText はカメラを動かしても常に同じ位置に表示されるよ！
+  Engine.drawUIText('Arrow: Move / Click: Warp / Q,E: Zoom', -200, 260, 18, '#94a3b8');
+  Engine.drawUIText('Score: ' + score, -320, 220, 24, '#fde047');
+
+  // 新機能：カメラ操作のチート機能！
+  if (Engine.Input.getKey('KeyQ')) Engine.Camera.zoom += 1 * dt;
+  if (Engine.Input.getKey('KeyE')) Engine.Camera.zoom -= 1 * dt;
 });`;
 
     // --- プロジェクト管理 ---
@@ -536,17 +597,80 @@ Engine.setUpdate((dt) => {
       };
     };
 
+    // --- 追加: カメラとシェイク対応の座標変換 ---
+    const getCanvasPosCamera = (canvas, worldX, worldY, camera, shakeX, shakeY) => {
+      return {
+        cx: canvas.width / 2 + (worldX - camera.x) * camera.zoom + shakeX,
+        cy: canvas.height / 2 - (worldY - camera.y) * camera.zoom + shakeY
+      };
+    };
+    const getMouseWorldPosCamera = (canvas, clientX, clientY, camera) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const cx = (clientX - rect.left) * scaleX;
+      const cy = (clientY - rect.top) * scaleY;
+      return {
+        wx: (cx - canvas.width / 2) / camera.zoom + camera.x,
+        wy: (canvas.height / 2 - cy) / camera.zoom + camera.y
+      };
+    };
+
     // エンジンAPIオブジェクトを生成する関数 (実行コンテキスト毎に作るため)
-    function createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, customLogFn) {
-      let userInit = null;
-      let userUpdate = null;
+    function createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, customLogFn) {
+      // 🌟変更: コールバックを配列化して複数登録可能にする
+      let userInits = [];
+      let userUpdates = [];
+      let messageListeners = {}; // メッセージ送受信用
+
+      let shakePower = 0;
+      let totalTime = 0;
+      let frameCount = 0;
+      let currentDt = 0;
+
+      const applyCamera = (wx, wy) => {
+        const shakeX = shakePower > 0 ? (Math.random() - 0.5) * shakePower : 0;
+        const shakeY = shakePower > 0 ? (Math.random() - 0.5) * shakePower : 0;
+        return getCanvasPosCamera(canvas, wx, wy, cameraState, shakeX, shakeY);
+      };
 
       const Engine = {
-        _getUserInit: () => userInit,
-        _getUserUpdate: () => userUpdate,
+        _getUserInits: () => userInits,
+        _getUserUpdates: () => userUpdates,
+        _updateEngineTime: (dt) => {
+          currentDt = dt; totalTime += dt; frameCount++;
+          if(shakePower > 0) { shakePower *= 0.9; if(shakePower < 0.5) shakePower = 0; }
+        },
 
-        setInit: (fn) => { userInit = fn; },
-        setUpdate: (fn) => { userUpdate = fn; },
+        // 🌟変更: 上書きではなく配列に追加する
+        setInit: (fn) => { userInits.push(fn); },
+        setUpdate: (fn) => { userUpdates.push(fn); },
+        onClick: (fn) => { callbacks.onClick.push(fn); },
+        onKeyDown: (fn) => { callbacks.onKeyDown.push(fn); },
+        onKeyUp: (fn) => { callbacks.onKeyUp.push(fn); },
+        
+        // 🌟新規: メッセージパッシングAPI
+        sendMessage: (type, data) => {
+          if (messageListeners[type]) {
+            messageListeners[type].forEach(cb => cb(data));
+          }
+        },
+        receiveMessage: (type, cb) => {
+          if (!messageListeners[type]) messageListeners[type] = [];
+          messageListeners[type].push(cb);
+        },
+
+        Camera: cameraState,
+        Effect: { shake: (power) => { shakePower = power; } },
+        Storage: {
+          save: (key, val) => { try { localStorage.setItem('game_save_' + key, JSON.stringify(val)); } catch(e){} },
+          load: (key, defVal) => { try { const d = localStorage.getItem('game_save_' + key); return d ? JSON.parse(d) : defVal; } catch(e){ return defVal; } }
+        },
+        Time: {
+          get deltaTime() { return currentDt; },
+          get frameCount() { return frameCount; },
+          get time() { return totalTime; }
+        },
         
         clear: (color = '#000') => {
           ctx.fillStyle = color;
@@ -555,31 +679,51 @@ Engine.setUpdate((dt) => {
         hasCostume: (name) => !!loadedImages[name],
         hasSound: (name) => !!loadedSounds[name],
         
-        // --- 描画 (中心基準) ---
+        // --- 描画 (中心基準・カメラ対応) ---
         draw: (name, x, y, width, height, angle = 0) => {
           const img = loadedImages[name];
           if (!img) return;
-          const { cx, cy } = getCanvasPos(canvas, x, y);
+          const { cx, cy } = applyCamera(x, y);
           ctx.save();
           ctx.translate(cx, cy);
           // Canvasは時計回りが正だが、デカルト座標では反時計回りが正のためマイナスにする
           ctx.rotate((-angle * Math.PI) / 180);
-          ctx.drawImage(img, -width / 2, -height / 2, width, height);
+          ctx.drawImage(img, -(width * cameraState.zoom) / 2, -(height * cameraState.zoom) / 2, width * cameraState.zoom, height * cameraState.zoom);
           ctx.restore();
         },
         drawRect: (x, y, w, h, color = '#fff', fill = true) => {
-          const { cx, cy } = getCanvasPos(canvas, x, y);
+          const { cx, cy } = applyCamera(x, y);
+          const cw = w * cameraState.zoom;
+          const ch = h * cameraState.zoom;
           ctx.fillStyle = color; ctx.strokeStyle = color;
-          if (fill) ctx.fillRect(cx - w/2, cy - h/2, w, h);
-          else ctx.strokeRect(cx - w/2, cy - h/2, w, h);
+          if (fill) ctx.fillRect(cx - cw/2, cy - ch/2, cw, ch);
+          else ctx.strokeRect(cx - cw/2, cy - ch/2, cw, ch);
         },
         drawCircle: (x, y, r, color = '#fff', fill = true) => {
-          const { cx, cy } = getCanvasPos(canvas, x, y);
-          ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          const { cx, cy } = applyCamera(x, y);
+          const cr = r * cameraState.zoom;
+          ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2);
           ctx.fillStyle = color; ctx.strokeStyle = color;
           if (fill) ctx.fill(); else ctx.stroke();
         },
+        drawLine: (x1, y1, x2, y2, color = '#fff', width = 2) => {
+          const p1 = applyCamera(x1, y1);
+          const p2 = applyCamera(x2, y2);
+          ctx.beginPath();
+          ctx.moveTo(p1.cx, p1.cy);
+          ctx.lineTo(p2.cx, p2.cy);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = width * cameraState.zoom;
+          ctx.stroke();
+        },
         drawText: (text, x, y, size = 20, color = '#fff') => {
+          const { cx, cy } = applyCamera(x, y);
+          ctx.fillStyle = color; ctx.font = `bold ${size * cameraState.zoom}px "Segoe UI", sans-serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, cx, cy);
+        },
+        // --- UI描画 (カメラ無視) ---
+        drawUIText: (text, x, y, size = 20, color = '#fff') => {
           const { cx, cy } = getCanvasPos(canvas, x, y);
           ctx.fillStyle = color; ctx.font = `bold ${size}px "Segoe UI", sans-serif`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -635,6 +779,12 @@ Engine.setUpdate((dt) => {
             const rad = angleDeg * Math.PI / 180;
             // 上が+yなので sin() を足すことで上に進む
             return { x: x + Math.cos(rad) * distance, y: y + Math.sin(rad) * distance };
+          },
+          angleBetween: (x1, y1, x2, y2) => {
+            return Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+          },
+          distance: (x1, y1, x2, y2) => {
+            return Math.hypot(x2 - x1, y2 - y1);
           },
           Collision: {
             rectRect: (x1, y1, w1, h1, x2, y2, w2, h2) => {
@@ -701,13 +851,15 @@ Engine.setUpdate((dt) => {
       for (const sound of project.sounds) loadedSounds[sound.name] = sound.src;
 
       const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
+      const cameraState = { x: 0, y: 0, zoom: 1 };
+      const callbacks = { onClick: [], onKeyDown: [], onKeyUp: [] }; // 🌟配列に変更
 
-      const keydownHandler = (e) => { inputState.keys[e.code] = true; };
-      const keyupHandler = (e) => { inputState.keys[e.code] = false; };
-      const mousedownHandler = () => { inputState.mouse.isDown = true; };
+      const keydownHandler = (e) => { inputState.keys[e.code] = true; if(!inputState.prevKeys[e.code]) callbacks.onKeyDown.forEach(cb => cb(e.code)); };
+      const keyupHandler = (e) => { inputState.keys[e.code] = false; callbacks.onKeyUp.forEach(cb => cb(e.code)); };
+      const mousedownHandler = () => { inputState.mouse.isDown = true; callbacks.onClick.forEach(cb => cb(inputState.mouse.x, inputState.mouse.y)); };
       const mouseupHandler = () => { inputState.mouse.isDown = false; };
       const mousemoveHandler = (e) => {
-        const wp = getMouseWorldPos(canvas, e.clientX, e.clientY);
+        const wp = getMouseWorldPosCamera(canvas, e.clientX, e.clientY, cameraState);
         inputState.mouse.x = wp.wx; inputState.mouse.y = wp.wy;
       };
 
@@ -719,35 +871,51 @@ Engine.setUpdate((dt) => {
 
       activeEngineHandlers = { keydown: keydownHandler, keyup: keyupHandler, mousedown: mousedownHandler, mouseup: mouseupHandler, mousemove: mousemoveHandler };
 
-      const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, (msg) => addLog(msg, 'info'));
+      const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, (msg) => addLog(msg, 'info'));
 
-      // ユーザーコード評価
-      const fullCode = project.scripts.map(s => s.content).join('\n\n');
+      // 🌟変更: スクリプトを結合せずに個別に独立して評価（スコープの分離）
+      let compileError = false;
+      project.scripts.forEach(script => {
+        try {
+          const runUserCode = new Function('Engine', script.content);
+          runUserCode(Engine);
+        } catch (err) {
+          addLog(`[${script.name}] コンパイルエラー: ${err.message}`, 'error');
+          compileError = true;
+        }
+      });
+      if (compileError) { stopGameEngine(); return; }
+
+      // 🌟変更: 複数のスクリプトが登録した初期化関数をすべて実行
+      const initFns = Engine._getUserInits();
       try {
-        const runUserCode = new Function('Engine', fullCode);
-        runUserCode(Engine);
+        initFns.forEach(fn => fn());
       } catch (err) {
-        addLog(`コンパイルエラー: ${err.message}`, 'error');
+        addLog(`初期化エラー: ${err.message}`, 'error');
         stopGameEngine(); return;
       }
-
-      const initFn = Engine._getUserInit();
-      if (initFn) { try { initFn(); } catch (err) { addLog(`初期化エラー: ${err.message}`, 'error'); stopGameEngine(); return; } }
 
       addLog('ゲームが正常に開始されたよ！', 'success');
       isRunning = true;
       btnRun.classList.add('hidden'); btnStop.classList.remove('hidden');
 
-      const updateFn = Engine._getUserUpdate();
+      const updateFns = Engine._getUserUpdates();
       let lastTime = performance.now();
       
       function loop(currentTime) {
         const dt = (currentTime - lastTime) / 1000;
         lastTime = currentTime;
 
-        if (updateFn) {
-          try { updateFn(dt); } 
-          catch (err) { addLog(`実行時エラー: ${err.message}`, 'error'); stopGameEngine(); return; }
+        Engine._updateEngineTime(dt);
+
+        // 🌟変更: 複数のスクリプトが登録した毎フレーム処理をすべて実行
+        if (updateFns.length > 0) {
+          try {
+            updateFns.forEach(fn => fn(dt));
+          } catch (err) {
+            addLog(`実行時エラー: ${err.message}`, 'error');
+            stopGameEngine(); return;
+          }
         }
 
         Object.assign(inputState.prevKeys, inputState.keys);
@@ -767,6 +935,8 @@ Engine.setUpdate((dt) => {
       const engineCode = `
         const getCanvasPos = ${getCanvasPos.toString()};
         const getMouseWorldPos = ${getMouseWorldPos.toString()};
+        const getCanvasPosCamera = ${getCanvasPosCamera.toString()};
+        const getMouseWorldPosCamera = ${getMouseWorldPosCamera.toString()};
         const createEngineAPI = ${createEngineAPI.toString()};
       `;
 
@@ -807,35 +977,44 @@ Engine.setUpdate((dt) => {
       for (const sound of project.sounds) loadedSounds[sound.name] = sound.src;
 
       const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
+      const cameraState = { x: 0, y: 0, zoom: 1 };
+      const callbacks = { onClick: [], onKeyDown: [], onKeyUp: [] };
 
-      window.addEventListener('keydown', e => inputState.keys[e.code] = true);
-      window.addEventListener('keyup', e => inputState.keys[e.code] = false);
-      canvas.addEventListener('mousedown', () => inputState.mouse.isDown = true);
+      window.addEventListener('keydown', e => { inputState.keys[e.code] = true; if(!inputState.prevKeys[e.code]) callbacks.onKeyDown.forEach(cb => cb(e.code)); });
+      window.addEventListener('keyup', e => { inputState.keys[e.code] = false; callbacks.onKeyUp.forEach(cb => cb(e.code)); });
+      canvas.addEventListener('mousedown', () => { inputState.mouse.isDown = true; callbacks.onClick.forEach(cb => cb(inputState.mouse.x, inputState.mouse.y)); });
       window.addEventListener('mouseup', () => inputState.mouse.isDown = false);
       canvas.addEventListener('mousemove', e => {
-        const wp = getMouseWorldPos(canvas, e.clientX, e.clientY);
+        const wp = getMouseWorldPosCamera(canvas, e.clientX, e.clientY, cameraState);
         inputState.mouse.x = wp.wx; inputState.mouse.y = wp.wy;
       });
 
-      const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, (msg) => console.log("[Game Log]", msg));
+      const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, (msg) => console.log("[Game Log]", msg));
 
-      const fullCode = project.scripts.map(s => s.content).join('\\n\\n');
-      try {
-        const runUserCode = new Function('Engine', fullCode);
-        runUserCode(Engine);
-      } catch (err) { console.error("Compile Error:", err); return; }
+      // 個別評価に変更
+      let compileError = false;
+      project.scripts.forEach(script => {
+        try {
+          const runUserCode = new Function('Engine', script.content);
+          runUserCode(Engine);
+        } catch (err) { console.error("[" + script.name + "] Compile Error:", err); compileError = true; }
+      });
+      if(compileError) return;
 
-      const initFn = Engine._getUserInit();
-      if (initFn) { try { initFn(); } catch (err) { console.error("Init Error:", err); } }
+      const initFns = Engine._getUserInits();
+      try { initFns.forEach(fn => fn()); } catch (err) { console.error("Init Error:", err); }
 
-      const updateFn = Engine._getUserUpdate();
+      const updateFns = Engine._getUserUpdates();
       let lastTime = performance.now();
       
       function loop(currentTime) {
         const dt = (currentTime - lastTime) / 1000;
         lastTime = currentTime;
-        if (updateFn) {
-          try { updateFn(dt); } catch (err) { console.error("Update Error:", err); }
+        
+        Engine._updateEngineTime(dt);
+
+        if (updateFns.length > 0) {
+          try { updateFns.forEach(fn => fn(dt)); } catch (err) { console.error("Update Error:", err); }
         }
         Object.assign(inputState.prevKeys, inputState.keys);
         inputState.prevMouse.isDown = inputState.mouse.isDown;
@@ -877,7 +1056,7 @@ Engine.setUpdate((dt) => {
 
     window.addEventListener('mousemove', (e) => {
       if (!isResizing) return;
-      // ウィンドウ全体の幅から、マウスのX座標を引いて右ペインの幅を計算
+      // ウィンドウ全体の幅から、マウスのX座標を引いて右ペイン의幅を計算
       let newWidth = window.innerWidth - e.clientX;
       
       // 最小幅(300px)と最大幅(ウィンドウ幅 - 左ペイン - 中央ペインの最小幅)の制限
