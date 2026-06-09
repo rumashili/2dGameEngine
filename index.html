@@ -8,10 +8,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome 6 Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- JSZip (ZIPパッケージング用) をMonacoより先に読み込むよ！ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  
   <!-- Monaco Editor -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
-  <!-- JSZip (ZIPパッケージング用) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     /* iOS Safari等のツールバー被り対策に dvh を適用 */
     .h-safe-screen {
@@ -386,7 +388,15 @@ Engine.setUpdate((dt) => {
     };
 
     function saveProjectToLocal() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(project)); } catch(e) { console.error("Save failed", e); }
+      try { 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(project)); 
+      } catch(e) { 
+        if (e.name === 'QuotaExceededError' || e.message.includes('quota') || e.message.includes('Quota')) {
+          addLog('【警告】ブラウザの保存容量オーバーだよ！大きな画像や音声を消すか、一旦Exportで保存してね。', 'error');
+        } else {
+          console.error("Save failed", e); 
+        }
+      }
     }
 
     function loadProjectFromLocal() {
@@ -526,7 +536,7 @@ Engine.setUpdate((dt) => {
     const fileInput = document.getElementById('file-input');
     let uploadTarget = 'costume';
     document.getElementById('btn-add-costume').addEventListener('click', () => { uploadTarget = 'costume'; fileInput.accept = 'image/*'; fileInput.click(); });
-    document.getElementById('btn-add-sound').addEventListener('click', () => { uploadTarget = 'sound'; fileInput.accept = 'audio/*'; fileInput.click(); });
+    document.getElementById('btn-add-sound').addEventListener('click', () => { uploadTarget = 'sound'; fileInput.accept = 'audio/*, .mp3, .wav, .ogg, .m4a'; fileInput.click(); });
 
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -960,7 +970,7 @@ Engine.setUpdate((dt) => {
           const ext = getExtensionFromMime(match[1]);
           const fileName = `${costume.name}.${ext}`;
           costumeFolder.file(fileName, match[2], {base64: true});
-          costumeList.push({ name: costume.name, path: `costume/${fileName}` });
+          costumeList.push({ name: costume.name, path: `./costume/${fileName}` });
         }
       });
 
@@ -972,7 +982,7 @@ Engine.setUpdate((dt) => {
           const ext = getExtensionFromMime(match[1]);
           const fileName = `${sound.name}.${ext}`;
           soundFolder.file(fileName, match[2], {base64: true});
-          soundList.push({ name: sound.name, path: `sound/${fileName}` });
+          soundList.push({ name: sound.name, path: `./sound/${fileName}` });
         }
       });
 
@@ -983,7 +993,7 @@ Engine.setUpdate((dt) => {
         // 各スクリプトが独立したスコープを持ちつつ、Engineオブジェクトを受け取れるように関数でラップする
         const wrappedContent = `window._registerGameScript(function(Engine) {\n${script.content}\n});`;
         scriptFolder.file(fileName, wrappedContent);
-        scriptList.push(`script/${fileName}`);
+        scriptList.push(`./script/${fileName}`);
       });
 
       // エンジンロジックの抽出
@@ -1100,7 +1110,10 @@ Engine.setUpdate((dt) => {
       zip.file("index.html", htmlContent);
 
       // ZIPファイルの生成とダウンロード
-      zip.generateAsync({type:"blob"}).then(function(content) {
+      zip.generateAsync({
+        type: "blob",
+        platform: "UNIX"
+      }).then(function(content) {
         const url = URL.createObjectURL(content);
         const a = document.createElement('a');
         a.href = url;
