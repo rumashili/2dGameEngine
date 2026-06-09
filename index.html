@@ -81,7 +81,13 @@
           <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🖌️ 描画・UI (Draw)</h3>
           <ul class="space-y-3">
             <li><span class="doc-code">Engine.clear(color)</span> : 画面全体を指定色でクリアするよ。</li>
-            <li><span class="doc-code">Engine.draw(name, x, y, width, height, angle)</span> : 画像を <strong>中心基準</strong> で描画するよ。angleの単位は度数。</li>
+            <li>
+              <span class="doc-code">Engine.draw(name, x, y, width, height, angle, options)</span> : 画像を <strong>中心基準</strong> で描画するよ。angleの単位は度数。<br>
+              <div class="text-xs text-sky-300 mt-1 p-2 bg-slate-800/50 rounded border border-slate-700">
+                <i class="fas fa-magic mr-1"></i> optionsで画像効果(エフェクト)を指定できるよ！<br>
+                例: <code>{ alpha: 0.5, brightness: 1.5, hueRotate: 90, blur: 2, grayscale: 1 }</code>
+              </div>
+            </li>
             <li><span class="doc-code">Engine.drawRect(x, y, w, h, color, fill)</span> : 四角形を <strong>中心基準</strong> で描くよ。</li>
             <li><span class="doc-code">Engine.drawCircle(x, y, radius, color, fill)</span> : 円を描くよ。</li>
             <li><span class="doc-code">Engine.drawText(text, x, y, size, color)</span> : 文字を <strong>中央揃え(中心基準)</strong> で描画するよ。</li>
@@ -117,7 +123,7 @@
 
         <!-- セクション: チート級API・裏技 -->
         <section>
-          <h3 class="text-lg font-bold text-fuchsia-400 border-b border-slate-600 pb-2 mb-3">🔥 チート級・裏技API (使うな危険!? 褒め言葉)</h3>
+          <h3 class="text-lg font-bold text-fuchsia-400 border-b border-slate-600 pb-2 mb-3">その他のツール</h3>
           <ul class="space-y-3">
             <li><span class="doc-code">Engine.drawLine(x1, y1, x2, y2, color, width)</span> : 自由に直線を引けるよ。レーザーやワイヤーアクションに！</li>
             <li><span class="doc-code">Engine.Camera.x / y / zoom</span> : カメラの位置や拡大率。これを動かすだけで画面全体がスクロールしたりズームするよ！</li>
@@ -705,7 +711,7 @@ Engine.setUpdate((dt) => {
         hasSound: (name) => !!loadedSounds[name],
         
         // --- 描画 (中心基準・カメラ対応) ---
-        draw: (name, x, y, width, height, angle = 0) => {
+        draw: (name, x, y, width, height, angle = 0, options = {}) => {
           const img = loadedImages[name];
           if (!img) return;
           const { cx, cy } = applyCamera(x, y);
@@ -713,6 +719,23 @@ Engine.setUpdate((dt) => {
           ctx.translate(cx, cy);
           // Canvasは時計回りが正だが、デカルト座標では反時計回りが正のためマイナスにする
           ctx.rotate((-angle * Math.PI) / 180);
+          
+          // --- 画像効果(エフェクト)の適用 ---
+          if (options.alpha !== undefined) ctx.globalAlpha = options.alpha;
+          
+          let filters = [];
+          if (options.brightness !== undefined) filters.push(`brightness(${options.brightness})`);
+          if (options.contrast !== undefined) filters.push(`contrast(${options.contrast})`);
+          if (options.blur !== undefined) filters.push(`blur(${options.blur}px)`);
+          if (options.grayscale !== undefined) filters.push(`grayscale(${options.grayscale})`);
+          if (options.hueRotate !== undefined) filters.push(`hue-rotate(${options.hueRotate}deg)`);
+          if (options.invert !== undefined) filters.push(`invert(${options.invert})`);
+          if (options.sepia !== undefined) filters.push(`sepia(${options.sepia})`);
+          
+          if (filters.length > 0) {
+            ctx.filter = filters.join(' ');
+          }
+
           ctx.drawImage(img, -(width * cameraState.zoom) / 2, -(height * cameraState.zoom) / 2, width * cameraState.zoom, height * cameraState.zoom);
           ctx.restore();
         },
