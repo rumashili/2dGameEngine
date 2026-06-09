@@ -85,7 +85,8 @@
               <span class="doc-code">Engine.draw(name, x, y, width, height, angle, options)</span> : 画像を <strong>中心基準</strong> で描画するよ。angleの単位は度数。<br>
               <div class="text-xs text-sky-300 mt-1 p-2 bg-slate-800/50 rounded border border-slate-700">
                 <i class="fas fa-magic mr-1"></i> optionsで画像効果(エフェクト)を指定できるよ！<br>
-                例: <code>{ alpha: 0.5, brightness: 1.5, hueRotate: 90, blur: 2, grayscale: 1 }</code>
+                例: <code>{ alpha: 0.5, brightness: 1.5, hueRotate: 90, blur: 2, grayscale: 1 }</code><br>
+                ※角度を指定しない場合は、<code>Engine.draw('name', x, y, w, h, { brightness: 0.5 })</code> のように、角度を省略して直接エフェクトを指定しても大丈夫だよ！
               </div>
             </li>
             <li><span class="doc-code">Engine.drawRect(x, y, w, h, color, fill)</span> : 四角形を <strong>中心基準</strong> で描くよ。</li>
@@ -714,6 +715,13 @@ Engine.setUpdate((dt) => {
         draw: (name, x, y, width, height, angle = 0, options = {}) => {
           const img = loadedImages[name];
           if (!img) return;
+
+          // 🌟オーバーロード対応：角度引数を省略して直接optionsオブジェクトを渡した場合の自動ケア
+          if (typeof angle === 'object' && angle !== null) {
+            options = angle;
+            angle = 0;
+          }
+
           const { cx, cy } = applyCamera(x, y);
           ctx.save();
           ctx.translate(cx, cy);
@@ -721,7 +729,11 @@ Engine.setUpdate((dt) => {
           ctx.rotate((-angle * Math.PI) / 180);
           
           // --- 画像効果(エフェクト)の適用 ---
-          if (options && options.alpha !== undefined) ctx.globalAlpha = options.alpha;
+          if (options && options.alpha !== undefined) {
+            ctx.globalAlpha = options.alpha;
+          } else {
+            ctx.globalAlpha = 1.0;
+          }
           
           let filters = [];
           if (options) {
@@ -736,10 +748,16 @@ Engine.setUpdate((dt) => {
           
           if (filters.length > 0) {
             ctx.filter = filters.join(' ');
+          } else {
+            ctx.filter = 'none';
           }
 
           ctx.drawImage(img, -(width * cameraState.zoom) / 2, -(height * cameraState.zoom) / 2, width * cameraState.zoom, height * cameraState.zoom);
           ctx.restore();
+          
+          // リセット（念のため）
+          ctx.filter = 'none';
+          ctx.globalAlpha = 1.0;
         },
         drawRect: (x, y, w, h, color = '#fff', fill = true) => {
           const { cx, cy } = applyCamera(x, y);
