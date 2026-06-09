@@ -590,41 +590,53 @@ Engine.setUpdate((dt) => {
 
     // 座標変換関数: ワールド座標(中心0,0 上+y) -> Canvas座標(左上0,0 下+y)
     const getCanvasPos = (canvas, worldX, worldY) => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       return {
-        cx: canvas.width / 2 + worldX,
-        cy: canvas.height / 2 - worldY
+        cx: w / 2 + worldX,
+        cy: h / 2 - worldY
       };
     };
 
     // マウス座標変換関数: Event座標 -> ワールド座標
     const getMouseWorldPos = (canvas, clientX, clientY) => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      const scaleX = w / rect.width;
+      const scaleY = h / rect.height;
       const cx = (clientX - rect.left) * scaleX;
       const cy = (clientY - rect.top) * scaleY;
       return {
-        wx: cx - canvas.width / 2,
-        wy: canvas.height / 2 - cy
+        wx: cx - w / 2,
+        wy: h / 2 - cy
       };
     };
 
     // --- 追加: カメラとシェイク対応の座標変換 ---
     const getCanvasPosCamera = (canvas, worldX, worldY, camera, shakeX, shakeY) => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       return {
-        cx: canvas.width / 2 + (worldX - camera.x) * camera.zoom + shakeX,
-        cy: canvas.height / 2 - (worldY - camera.y) * camera.zoom + shakeY
+        cx: w / 2 + (worldX - camera.x) * camera.zoom + shakeX,
+        cy: h / 2 - (worldY - camera.y) * camera.zoom + shakeY
       };
     };
     const getMouseWorldPosCamera = (canvas, clientX, clientY, camera) => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      const scaleX = w / rect.width;
+      const scaleY = h / rect.height;
       const cx = (clientX - rect.left) * scaleX;
       const cy = (clientY - rect.top) * scaleY;
       return {
-        wx: (cx - canvas.width / 2) / camera.zoom + camera.x,
-        wy: (canvas.height / 2 - cy) / camera.zoom + camera.y
+        wx: (cx - w / 2) / camera.zoom + camera.x,
+        wy: (h / 2 - cy) / camera.zoom + camera.y
       };
     };
 
@@ -685,8 +697,9 @@ Engine.setUpdate((dt) => {
         },
         
         clear: (color = '#000') => {
+          const dpr = window.devicePixelRatio || 1;
           ctx.fillStyle = color;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
         },
         hasCostume: (name) => !!loadedImages[name],
         hasSound: (name) => !!loadedSounds[name],
@@ -853,6 +866,13 @@ Engine.setUpdate((dt) => {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
 
+      // 高DPI(Retina)対応: キャンバスの解像度を上げる
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = 800 * dpr;
+      canvas.height = 600 * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // リセット
+      ctx.scale(dpr, dpr);
+
       const loadedImages = {};
       for (const costume of project.costumes) {
         const img = new Image(); img.src = costume.src;
@@ -958,42 +978,39 @@ Engine.setUpdate((dt) => {
       }
 
       const zip = new JSZip();
-      const scriptFolder = zip.folder("script");
-      const costumeFolder = zip.folder("costume");
-      const soundFolder = zip.folder("sound");
 
-      // 画像アセットの抽出と保存
+      // 画像アセットの抽出と保存 (フラット階層)
       const costumeList = [];
       project.costumes.forEach(costume => {
         const match = costume.src.match(/^data:(image\/[a-zA-Z0-9\-+]+);base64,(.+)$/);
         if (match) {
           const ext = getExtensionFromMime(match[1]);
           const fileName = `${costume.name}.${ext}`;
-          costumeFolder.file(fileName, match[2], {base64: true});
-          costumeList.push({ name: costume.name, path: `./costume/${fileName}` });
+          zip.file(fileName, match[2], {base64: true});
+          costumeList.push({ name: costume.name, path: `./${fileName}` });
         }
       });
 
-      // 音声アセットの抽出と保存
+      // 音声アセットの抽出と保存 (フラット階層)
       const soundList = [];
       project.sounds.forEach(sound => {
         const match = sound.src.match(/^data:(audio\/[a-zA-Z0-9\-+]+);base64,(.+)$/);
         if (match) {
           const ext = getExtensionFromMime(match[1]);
           const fileName = `${sound.name}.${ext}`;
-          soundFolder.file(fileName, match[2], {base64: true});
-          soundList.push({ name: sound.name, path: `./sound/${fileName}` });
+          zip.file(fileName, match[2], {base64: true});
+          soundList.push({ name: sound.name, path: `./${fileName}` });
         }
       });
 
-      // スクリプトの抽出と保存
+      // スクリプトの抽出と保存 (フラット階層)
       const scriptList = [];
       project.scripts.forEach(script => {
         const fileName = `${script.name}.js`;
         // 各スクリプトが独立したスコープを持ちつつ、Engineオブジェクトを受け取れるように関数でラップする
         const wrappedContent = `window._registerGameScript(function(Engine) {\n${script.content}\n});`;
-        scriptFolder.file(fileName, wrappedContent);
-        scriptList.push(`./script/${fileName}`);
+        zip.file(fileName, wrappedContent);
+        scriptList.push(`./${fileName}`);
       });
 
       // エンジンロジックの抽出
@@ -1012,12 +1029,40 @@ Engine.setUpdate((dt) => {
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Built Game</title>
   <style>
-    body { margin: 0; background: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; touch-action: none; font-family: sans-serif; }
-    #game-container { position: relative; width: 100%; max-width: 800px; aspect-ratio: 4/3; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-    canvas { background: #1e293b; width: 100%; height: 100%; display: block; border-radius: 8px; }
+    body { 
+      margin: 0; 
+      background: #0f172a; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      height: 100dvh; /* iOS Safari用 */
+      width: 100vw;
+      overflow: hidden; 
+      touch-action: none; 
+      font-family: sans-serif; 
+    }
+    #game-container { 
+      position: relative; 
+      width: 100vw; 
+      height: 100dvh; 
+      max-width: calc(100dvh * (4/3)); 
+      max-height: calc(100vw * (3/4)); 
+      box-shadow: 0 0 30px rgba(0,0,0,0.8); 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas { 
+      width: 100%; 
+      height: 100%; 
+      display: block; 
+      background: #1e293b; 
+      border-radius: 8px; 
+    }
   </style>
   <script>
     // 外部スクリプトファイルを受け取るための配列と登録関数
@@ -1041,6 +1086,13 @@ Engine.setUpdate((dt) => {
     (async function init() {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
+
+      // 高DPI(Retina)対応
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = 800 * dpr;
+      canvas.height = 600 * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
 
       const costumeData = ${JSON.stringify(costumeList)};
       const soundData = ${JSON.stringify(soundList)};
@@ -1111,8 +1163,7 @@ Engine.setUpdate((dt) => {
 
       // ZIPファイルの生成とダウンロード
       zip.generateAsync({
-        type: "blob",
-        platform: "UNIX"
+        type: "blob"
       }).then(function(content) {
         const url = URL.createObjectURL(content);
         const a = document.createElement('a');
