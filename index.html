@@ -721,16 +721,18 @@ Engine.setUpdate((dt) => {
           ctx.rotate((-angle * Math.PI) / 180);
           
           // --- 画像効果(エフェクト)の適用 ---
-          if (options.alpha !== undefined) ctx.globalAlpha = options.alpha;
+          if (options && options.alpha !== undefined) ctx.globalAlpha = options.alpha;
           
           let filters = [];
-          if (options.brightness !== undefined) filters.push(`brightness(${options.brightness})`);
-          if (options.contrast !== undefined) filters.push(`contrast(${options.contrast})`);
-          if (options.blur !== undefined) filters.push(`blur(${options.blur}px)`);
-          if (options.grayscale !== undefined) filters.push(`grayscale(${options.grayscale})`);
-          if (options.hueRotate !== undefined) filters.push(`hue-rotate(${options.hueRotate}deg)`);
-          if (options.invert !== undefined) filters.push(`invert(${options.invert})`);
-          if (options.sepia !== undefined) filters.push(`sepia(${options.sepia})`);
+          if (options) {
+            if (options.brightness !== undefined) filters.push(`brightness(${options.brightness})`);
+            if (options.contrast !== undefined) filters.push(`contrast(${options.contrast})`);
+            if (options.blur !== undefined) filters.push(`blur(${options.blur}px)`);
+            if (options.grayscale !== undefined) filters.push(`grayscale(${options.grayscale})`);
+            if (options.hueRotate !== undefined) filters.push(`hue-rotate(${options.hueRotate}deg)`);
+            if (options.invert !== undefined) filters.push(`invert(${options.invert})`);
+            if (options.sepia !== undefined) filters.push(`sepia(${options.sepia})`);
+          }
           
           if (filters.length > 0) {
             ctx.filter = filters.join(' ');
@@ -1220,7 +1222,7 @@ Engine.setUpdate((dt) => {
 
     window.addEventListener('mousemove', (e) => {
       if (!isResizing) return;
-      // ウィンドウ全体の幅から、マウスのX座標を引いて右ペイン의幅を計算
+      // ウィンドウ全体の幅から、マウスのX座標を引いて右ペインの幅を計算
       let newWidth = window.innerWidth - e.clientX;
       
       // 最小幅(300px)と最大幅(ウィンドウ幅 - 左ペイン - 中央ペインの最小幅)の制限
