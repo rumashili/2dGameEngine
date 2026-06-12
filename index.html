@@ -160,8 +160,19 @@
             <li><span class="doc-code">Engine.Math.lerp(a, b, t)</span> : aからbへ、tの割合(0.0〜1.0)で滑らかに変化する値を計算するよ。</li>
             <li><span class="doc-code">Engine.Math.clamp(val, min, max)</span> : valをminとmaxの間に収めるよ。</li>
             <li><span class="doc-code">Engine.Math.moveForward(x, y, angle, distance)</span> : 今の座標から指定した角度(度数)の方向へ進んだ新しい座標 <span class="doc-code">{x, y}</span> を返すよ。</li>
-            <li><span class="doc-code">Engine.play(name, volume, loop)</span> : アップロードした音声を再生するよ。<span class="text-xs text-slate-400">※volumeは0.0~1.0</span></li>
             <li><span class="doc-code">Engine.log(msg)</span> : エディタ右下のコンソールにメッセージを出力するよ。</li>
+          </ul>
+        </section>
+
+        <!-- セクション: 音声・サウンド -->
+        <section>
+          <h3 class="text-lg font-bold text-pink-400 border-b border-slate-600 pb-2 mb-3">🎵 音声・サウンド (Sound)</h3>
+          <ul class="space-y-3">
+            <li><span class="doc-code">Engine.Sound.play(name, volume, loop)</span> : 音声を再生するよ。<span class="text-xs text-slate-400">※volumeは0.0~1.0</span></li>
+            <li><span class="doc-code">Engine.Sound.stop(name)</span> : 指定した名前の現在再生中の音声をすべて停止するよ。</li>
+            <li><span class="doc-code">Engine.Sound.stopAll()</span> : 現在再生中のすべての音声を停止するよ。</li>
+            <li><span class="doc-code">Engine.Sound.setVolume(name, volume)</span> : 再生中の指定した名前の音声の音量を変更するよ。フェードアウトなどに！</li>
+            <div class="text-xs text-slate-400 mt-1">※<span class="doc-code">Engine.play(name, volume, loop)</span> も互換性のために今まで通り使えるよ。</div>
           </ul>
         </section>
 
@@ -491,6 +502,7 @@ Engine.setUpdate((dt) => {
     let isRunning = false;
     let animationFrameId = null;
     let activeEngineHandlers = null;
+    let activeEngineInstance = null; // 音声を止めるためにインスタンスを保持するよ
 
     // --- Monaco Editor ---
     require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
@@ -763,6 +775,7 @@ Engine.setUpdate((dt) => {
       let userInits = [];
       let userUpdates = [];
       let messageListeners = {}; // メッセージ送受信用
+      let activeSounds = []; // 🌟追加: 再生中の音声を管理
 
       let shakePower = 0;
       let totalTime = 0;
@@ -935,11 +948,49 @@ Engine.setUpdate((dt) => {
             currentY += fontSize * lineHeight;
           }
         },
+        Sound: {
+          play: (name, volume = 1.0, loop = false) => {
+            const src = loadedSounds[name];
+            if (!src) return;
+            const audio = new Audio(src);
+            audio.volume = Math.max(0, Math.min(1, volume)); // 0~1の範囲に優しく制限
+            audio.loop = loop;
+            
+            // 再生が終わったら管理リストからそっと消してあげる
+            audio.onended = () => {
+              activeSounds = activeSounds.filter(s => s.audio !== audio);
+            };
+
+            activeSounds.push({ name, audio });
+            audio.play().catch(()=>{});
+            return audio;
+          },
+          stop: (name) => {
+            activeSounds.forEach(s => {
+              if (s.name === name) {
+                s.audio.pause();
+                s.audio.currentTime = 0;
+              }
+            });
+            activeSounds = activeSounds.filter(s => s.name !== name);
+          },
+          stopAll: () => {
+            activeSounds.forEach(s => {
+              s.audio.pause();
+              s.audio.currentTime = 0;
+            });
+            activeSounds = [];
+          },
+          setVolume: (name, volume) => {
+            activeSounds.forEach(s => {
+              if (s.name === name) {
+                s.audio.volume = Math.max(0, Math.min(1, volume));
+              }
+            });
+          }
+        },
         play: (name, volume = 1.0, loop = false) => {
-          const src = loadedSounds[name];
-          if (!src) return;
-          const audio = new Audio(src); audio.volume = volume; audio.loop = loop;
-          audio.play().catch(()=>{});
+          Engine.Sound.play(name, volume, loop);
         },
         Input: {
           getKey: (code) => !!inputState.keys[code],
@@ -1007,6 +1058,10 @@ Engine.setUpdate((dt) => {
         canvas.removeEventListener('mousemove', activeEngineHandlers.mousemove);
         activeEngineHandlers = null;
       }
+      if (activeEngineInstance) {
+        activeEngineInstance.Sound.stopAll(); // 🌟追加: ゲーム停止時にすべての音を止めるよ
+        activeEngineInstance = null;
+      }
       isRunning = false;
       btnRun.classList.remove('hidden'); btnStop.classList.add('hidden');
       addLog('ゲームを停止したよ。');
@@ -1057,6 +1112,7 @@ Engine.setUpdate((dt) => {
       activeEngineHandlers = { keydown: keydownHandler, keyup: keyupHandler, mousedown: mousedownHandler, mouseup: mouseupHandler, mousemove: mousemoveHandler };
 
       const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, (msg) => addLog(msg, 'info'));
+      activeEngineInstance = Engine; // 🌟追加: 音声を止めるためにインスタンスを保存しておくよ
 
       // 🌟変更: スクリプトを結合せずに個別に独立して評価（スコープの分離）
       let compileError = false;
