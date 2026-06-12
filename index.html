@@ -482,9 +482,13 @@ Engine.setUpdate((dt) => {
           const activeClass = isActive ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
           const ext = type === 'script' ? '.js' : '';
           const delBtn = (type === 'script' && item.id === 'main') ? '' : `<button onclick="event.stopPropagation(); deleteFile('${type}', '${item.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>`;
+          
+          // ✨ 修正: すでに保存されているデータで名前が空っぽの場合でも「unnamed」として表示できるようにしたよ
+          const displayName = item.name || 'unnamed';
+          
           el.innerHTML += `
             <div onclick="selectFile('${type}', '${item.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
-              <span class="flex items-center gap-2 truncate text-sm"><i class="${icon} ${color} w-4 text-center"></i><span>${item.name}${ext}</span></span>
+              <span class="flex items-center gap-2 truncate text-sm"><i class="${icon} ${color} w-4 text-center"></i><span>${displayName}${ext}</span></span>
               ${delBtn}
             </div>
           `;
@@ -510,12 +514,16 @@ Engine.setUpdate((dt) => {
       } else if (type === 'costume') {
         editorEl.classList.add('hidden'); previewEl.classList.remove('hidden');
         const costume = project.costumes.find(c => c.id === id);
-        titleEl.innerHTML = `<i class="fas fa-image text-purple-400 mr-2"></i> ${costume.name}`;
-        previewEl.innerHTML = `<img src="${costume.src}" alt="${costume.name}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">`;
+        // ✨ 修正: 名前が空っぽの画像が選択された時もエラーにならないようにしたよ
+        const displayName = costume.name || 'unnamed';
+        titleEl.innerHTML = `<i class="fas fa-image text-purple-400 mr-2"></i> ${displayName}`;
+        previewEl.innerHTML = `<img src="${costume.src}" alt="${displayName}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">`;
       } else if (type === 'sound') {
         editorEl.classList.add('hidden'); previewEl.classList.remove('hidden');
         const sound = project.sounds.find(s => s.id === id);
-        titleEl.innerHTML = `<i class="fas fa-music text-pink-400 mr-2"></i> ${sound.name}`;
+        // ✨ 修正: 名前が空っぽの音声が選択された時もエラーにならないようにしたよ
+        const displayName = sound.name || 'unnamed';
+        titleEl.innerHTML = `<i class="fas fa-music text-pink-400 mr-2"></i> ${displayName}`;
         previewEl.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg flex flex-col items-center gap-4"><i class="fas fa-volume-high text-5xl text-pink-400 animate-bounce"></i><audio controls src="${sound.src}" class="w-64"></audio></div>`;
       }
     };
@@ -551,7 +559,13 @@ Engine.setUpdate((dt) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const src = event.target.result;
-        const name = file.name.split('.')[0].replace(/[^a-zA-Z0-9_]/g, '');
+        
+        // ✨ 修正: 日本語のファイル名も使えるように、致命的な記号だけを消すように優しくしたよ！
+        let name = file.name.split('.')[0].replace(/[\\/:\*\?"<>\|]/g, '').trim();
+        
+        // ✨ 修正: もし名前が完全に空っぽになっちゃったら、自動で適当な名前をつけてあげるね
+        if (!name) name = uploadTarget + '_' + Math.floor(Date.now() / 1000);
+        
         const id = 'asset_' + Date.now();
         if (uploadTarget === 'costume') { project.costumes.push({ id, name, src }); addLog(`画像「${name}」を追加したよ。`, 'success'); }
         else { project.sounds.push({ id, name, src }); addLog(`音声「${name}」を追加したよ。`, 'success'); }
@@ -1200,7 +1214,6 @@ Engine.setUpdate((dt) => {
   <\/script>
 </body>
 </html>`;
-
       // 組み立てたHTMLをZIPのルートに追加
       zip.file("index.html", htmlContent);
 
