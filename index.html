@@ -297,6 +297,46 @@
   <script>
     const STORAGE_KEY = '2d_engine_project_v2';
 
+    // --- IndexedDB ユーティリティ (大容量アセット用) ---
+    const DB_NAME = '2d_engine_db';
+    const STORE_NAME = 'assets';
+
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => { e.target.result.createObjectStore(STORE_NAME); };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function idbSet(key, val) {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(val, key);
+        tx.oncomplete = resolve; tx.onerror = reject;
+      });
+    }
+
+    async function idbGet(key) {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get(key);
+        req.onsuccess = () => resolve(req.result); req.onerror = reject;
+      });
+    }
+
+    async function idbDelete(key) {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).delete(key);
+        tx.oncomplete = resolve; tx.onerror = reject;
+      });
+    }
+
     // --- 初期状態のゲームスクリプト (新座標系対応) ---
     const initialCode = `// 状態を管理する変数（中心座標基準になりました！）
 // 画面サイズは 800x600、中心が (0,0) なので
@@ -394,9 +434,20 @@ Engine.setUpdate((dt) => {
       sounds: []
     };
 
-    function saveProjectToLocal() {
+    async function saveProjectToLocal() {
       try { 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(project)); 
+        // 容量を食い潰さないように、アセットの画像や音声データ(src)は除いて軽量化してlocalStorageへ
+        const lightProject = {
+          scripts: project.scripts,
+          costumes: project.costumes.map(c => ({ id: c.id, name: c.name })),
+          sounds: project.sounds.map(s => ({ id: s.id, name: s.name }))
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lightProject)); 
+
+        // 実データ(src)はIndexedDBに逃がすよ
+        for (const c of project.costumes) { if(c.src) await idbSet(c.id, c.src); }
+        for (const s of project.sounds) { if(s.src) await idbSet(s.id, s.src); }
+
       } catch(e) { 
         if (e.name === 'QuotaExceededError' || e.message.includes('quota') || e.message.includes('Quota')) {
           addLog('【警告】ブラウザの保存容量オーバーだよ！大きな画像や音声を消すか、一旦Exportで保存してね。', 'error');
@@ -406,12 +457,24 @@ Engine.setUpdate((dt) => {
       }
     }
 
-    function loadProjectFromLocal() {
+    async function loadProjectFromLocal() {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         try {
-          project = JSON.parse(data);
-          addLog('ローカルストレージから前回までの進捗を読み込んだよ。', 'success');
+          const loaded = JSON.parse(data);
+          
+          // 古いバージョンのデータ(srcがlocalStorageに丸ごと入ってる場合)の対応と、IDBからの復元
+          for (const c of loaded.costumes) {
+            if (c.src) await idbSet(c.id, c.src); // 古いデータをIDBへ移行
+            else c.src = await idbGet(c.id);      // IDBから読み込み
+          }
+          for (const s of loaded.sounds) {
+            if (s.src) await idbSet(s.id, s.src);
+            else s.src = await idbGet(s.id);
+          }
+
+          project = loaded;
+          addLog('ローカルストレージとIndexedDBから前回までの進捗を読み込んだよ。', 'success');
         } catch(e) { console.error("Load failed", e); }
       }
     }
@@ -451,10 +514,11 @@ Engine.setUpdate((dt) => {
         }
       });
       
-      // 初回ロード
-      loadProjectFromLocal();
-      renderTree();
-      if(project.scripts.length > 0) selectFile('script', project.scripts[0].id);
+      // 初回ロード (非同期になったから完了を待ってからツリーを描画するよ)
+      loadProjectFromLocal().then(() => {
+        renderTree();
+        if(project.scripts.length > 0) selectFile('script', project.scripts[0].id);
+      });
     });
 
     // --- コンソールログ ---
@@ -481,6 +545,9 @@ Engine.setUpdate((dt) => {
           const isActive = (activeFile.type === type && activeFile.id === item.id);
           const activeClass = isActive ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
           const ext = type === 'script' ? '.js' : '';
+          
+          // ✨ 追加: 名前変更ボタン
+          const renameBtn = `<button onclick="event.stopPropagation(); renameFile('${type}', '${item.id}')" class="text-slate-500 hover:text-sky-400 px-1" title="名前を変更"><i class="fas fa-pen text-xs"></i></button>`;
           const delBtn = (type === 'script' && item.id === 'main') ? '' : `<button onclick="event.stopPropagation(); deleteFile('${type}', '${item.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>`;
           
           // ✨ 修正: すでに保存されているデータで名前が空っぽの場合でも「unnamed」として表示できるようにしたよ
@@ -489,7 +556,10 @@ Engine.setUpdate((dt) => {
           el.innerHTML += `
             <div onclick="selectFile('${type}', '${item.id}')" class="flex items-center justify-between px-3 py-1.5 rounded cursor-pointer transition-colors ${activeClass}">
               <span class="flex items-center gap-2 truncate text-sm"><i class="${icon} ${color} w-4 text-center"></i><span>${displayName}${ext}</span></span>
-              ${delBtn}
+              <div class="flex items-center">
+                ${renameBtn}
+                ${delBtn}
+              </div>
             </div>
           `;
         });
@@ -528,11 +598,37 @@ Engine.setUpdate((dt) => {
       }
     };
 
+    window.renameFile = function(type, id) {
+      let list = type === 'script' ? project.scripts : (type === 'costume' ? project.costumes : project.sounds);
+      const item = list.find(i => i.id === id);
+      if (!item) return;
+
+      const newName = prompt("新しい名前を入力してください:", item.name || 'unnamed');
+      if (newName === null) return; // キャンセルした時
+
+      const cleanName = newName.replace(/[\\/:\*\?"<>\|]/g, '').trim();
+      if (!cleanName) {
+        addLog('有効な名前を入力してね！', 'error');
+        return;
+      }
+
+      item.name = cleanName;
+      saveProjectToLocal();
+      renderTree();
+      if (activeFile.id === id) selectFile(type, id); // エディタのタイトルを更新
+    };
+
     window.deleteFile = function(type, id) {
       if(confirm('削除してよろしいですか？')) {
-        if (type === 'script') project.scripts = project.scripts.filter(s => s.id !== id);
-        else if (type === 'costume') project.costumes = project.costumes.filter(c => c.id !== id);
-        else if (type === 'sound') project.sounds = project.sounds.filter(s => s.id !== id);
+        if (type === 'script') {
+          project.scripts = project.scripts.filter(s => s.id !== id);
+        } else if (type === 'costume') {
+          project.costumes = project.costumes.filter(c => c.id !== id);
+          idbDelete(id); // IndexedDBからも即座に削除！
+        } else if (type === 'sound') {
+          project.sounds = project.sounds.filter(s => s.id !== id);
+          idbDelete(id); // IndexedDBからも即座に削除！
+        }
         saveProjectToLocal();
         if (activeFile.id === id) selectFile('script', 'main'); else renderTree();
       }
