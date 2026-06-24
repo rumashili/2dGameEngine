@@ -91,6 +91,7 @@
             </li>
             <li><span class="doc-code">Engine.drawRect(x, y, w, h, color, fill)</span> : 四角形を <strong>中心基準</strong> で描くよ。</li>
             <li><span class="doc-code">Engine.drawCircle(x, y, radius, color, fill)</span> : 円を描くよ。</li>
+            <li><span class="doc-code">Engine.drawTriangle(x1, y1, x2, y2, x3, y3, color, fill)</span> : 3つの点を指定して三角形を描くよ！</li>
             <li><span class="doc-code">Engine.drawText(text, x, y, size, color)</span> : 文字を <strong>中央揃え(中心基準)</strong> で描画するよ。</li>
             <li>
               <span class="doc-code">Engine.drawTextBox(text, x, y, w, h, options)</span><br>
@@ -129,6 +130,7 @@
             <li><span class="doc-code">Engine.drawLine(x1, y1, x2, y2, color, width)</span> : 自由に直線を引けるよ。レーザーやワイヤーアクションに！</li>
             <li><span class="doc-code">Engine.Camera.x / y / zoom</span> : カメラの位置や拡大率。これを動かすだけで画面全体がスクロールしたりズームするよ！</li>
             <li><span class="doc-code">Engine.Effect.shake(power)</span> : ダメージを受けた時などに画面を揺らすド迫力エフェクト！</li>
+            <li><span class="doc-code">Engine.Effect.flash(color, duration)</span> : 画面を一瞬指定した色で光らせるよ！（例: '#ffffff', 0.5）</li>
             <li><span class="doc-code">Engine.Math.angleBetween(x1, y1, x2, y2)</span> : 2点間の「角度(度数)」を一発で計算。敵がプレイヤーを正確に狙う弾を作るのに必須！</li>
             <li><span class="doc-code">Engine.Math.distance(x1, y1, x2, y2)</span> : 2点間の距離を一発で計算。</li>
             <li><span class="doc-code">Engine.Storage.save(key, val) / load(key, defVal)</span> : ブラウザを閉じても消えないセーブデータを1行で実装！</li>
@@ -142,6 +144,7 @@
           <h3 class="text-lg font-bold text-sky-400 border-b border-slate-600 pb-2 mb-3">📞 コールバック＆メッセージ (イベント)</h3>
           <ul class="space-y-3">
             <li><span class="doc-code">Engine.onClick( (x, y) => { ... } )</span> : マウスがクリックされた瞬間に呼ばれるよ。</li>
+            <li><span class="doc-code">Engine.onMouseWheel( (delta) => { ... } )</span> : ホイールが回された時に呼ばれるよ。（delta は回転量）</li>
             <li><span class="doc-code">Engine.onKeyDown( (key) => { ... } )</span> : キーが押された瞬間に呼ばれるよ。</li>
             <li><span class="doc-code">Engine.onKeyUp( (key) => { ... } )</span> : キーが離された瞬間に呼ばれるよ。</li>
             <li><span class="doc-code">Engine.sendMessage('eventName', data)</span> : 別のスクリプトファイルへメッセージとデータを送るよ！</li>
@@ -157,6 +160,7 @@
           <h3 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-3">🧮 便利ツール・数学 (Math & Util)</h3>
           <ul class="space-y-3">
             <li><span class="doc-code">Engine.Math.random(min, max)</span> : minからmaxまでの間のランダムな小数を返すよ。</li>
+            <li><span class="doc-code">Engine.Math.randomInt(min, max)</span> : minからmaxまでの間のランダムな <strong>整数</strong> を返すよ！</li>
             <li><span class="doc-code">Engine.Math.lerp(a, b, t)</span> : aからbへ、tの割合(0.0〜1.0)で滑らかに変化する値を計算するよ。</li>
             <li><span class="doc-code">Engine.Math.clamp(val, min, max)</span> : valをminとmaxの間に収めるよ。</li>
             <li><span class="doc-code">Engine.Math.moveForward(x, y, angle, distance)</span> : 今の座標から指定した角度(度数)の方向へ進んだ新しい座標 <span class="doc-code">{x, y}</span> を返すよ。</li>
@@ -280,16 +284,16 @@
         </div>
       </div>
       
-      <!-- ゲームキャンバス -->
-      <div class="p-4 flex-1 flex flex-col">
-        <div class="w-full aspect-[4/3] bg-black rounded shadow-lg overflow-hidden border border-slate-800 relative">
+      <!-- ゲームキャンバス (親を overflow-hidden にして、ログが押し出されないようにする) -->
+      <div class="p-4 flex-1 flex flex-col overflow-hidden">
+        <div class="w-full aspect-[4/3] bg-black rounded shadow-lg overflow-hidden border border-slate-800 relative shrink-0">
           <!-- キャンバスの解像度は内部的に800x600固定 -->
           <canvas id="game-canvas" width="800" height="600" class="w-full h-full block bg-[#1e293b]"></canvas>
         </div>
 
-        <!-- ログコンソール -->
-        <div class="mt-4 flex-1 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden">
-          <div class="px-3 py-1.5 bg-slate-800 text-xs font-bold text-slate-400 flex items-center justify-between">
+        <!-- ログコンソール (min-h-0 を足して、中身のスクロールバーがちゃんと出るようにしたよ) -->
+        <div class="mt-4 flex-1 bg-slate-900 rounded border border-slate-800 flex flex-col overflow-hidden min-h-0">
+          <div class="px-3 py-1.5 bg-slate-800 text-xs font-bold text-slate-400 flex items-center justify-between shrink-0">
             <span class="flex items-center gap-2"><i class="fas fa-terminal"></i> Console</span>
             <button id="btn-clear-console" class="hover:text-white text-slate-500 transition-colors" title="ログをクリア">
               <i class="fas fa-trash-can"></i>
@@ -348,7 +352,7 @@
       });
     }
 
-    // --- 初期状態のゲームスクリプト (新座標系対応) ---
+    // --- 初期状態のゲームスクリプト (新座標系対応 + 追加APIデモ) ---
     const initialCode = `// 状態を管理する変数（中心座標基準になりました！）
 // 画面サイズは 800x600、中心が (0,0) なので
 // Xは -400 〜 +400、Yは -300 〜 +300 の範囲になるよ。
@@ -361,17 +365,26 @@ Engine.setInit(() => {
   Engine.log("新座標系のデモを開始！🚀");
 });
 
-// 新機能：コールバックでクリックイベントを取る！
+// コールバックでクリックイベントを取る！
 Engine.onClick((x, y) => {
   enemyCircle.x = x;
   enemyCircle.y = y;
   Engine.log('Click! ワープしたよ: ' + Math.floor(x) + ', ' + Math.floor(y));
   
-  // 新機能：画面揺らし（チート級演出！）
+  // 画面揺らし＆フラッシュ（追加API！）
   Engine.Effect.shake(20);
+  Engine.Effect.flash('#fde047', 0.15); 
 });
 
-// 新機能：メッセージを受け取る例
+// 新機能：マウスホイールでカメラをズーム！
+Engine.onMouseWheel((delta) => {
+  // delta がプラスなら縮小、マイナスなら拡大だよ
+  Engine.Camera.zoom -= delta * 0.001;
+  // ズームしすぎないように制限するね
+  Engine.Camera.zoom = Engine.Math.clamp(Engine.Camera.zoom, 0.5, 3.0);
+});
+
+// メッセージを受け取る例
 Engine.receiveMessage('addScore', (data) => {
   score += data.points;
 });
@@ -396,7 +409,7 @@ Engine.setUpdate((dt) => {
   enemyCircle.x = Engine.Math.lerp(enemyCircle.x, mouse.x, 0.05);
   enemyCircle.y = Engine.Math.lerp(enemyCircle.y, mouse.y, 0.05);
 
-  // 新機能：レーザー描画！（LineAPI）
+  // レーザー描画（LineAPI）
   Engine.drawLine(player.x, player.y, enemyCircle.x, enemyCircle.y, '#f59e0b', 4);
 
   // 四角(中心基準) と 円(中心基準) の当たり判定
@@ -407,35 +420,39 @@ Engine.setUpdate((dt) => {
 
   Engine.drawCircle(enemyCircle.x, enemyCircle.y, enemyCircle.r, isColliding ? '#ef4444' : '#8b5cf6');
 
+  // 新機能：三角形の描画！（敵の上に帽子みたいにつけてみるね）
+  Engine.drawTriangle(
+    enemyCircle.x, enemyCircle.y + enemyCircle.r + 30, // 頂点1 (上)
+    enemyCircle.x - 30, enemyCircle.y + enemyCircle.r, // 頂点2 (左下)
+    enemyCircle.x + 30, enemyCircle.y + enemyCircle.r, // 頂点3 (右下)
+    '#10b981'
+  );
+
   if (Engine.hasCostume('player')) {
     Engine.draw('player', player.x, player.y, player.w, player.h);
   } else {
     Engine.drawRect(player.x, player.y, player.w, player.h, '#38bdf8');
-    Engine.drawText('🚀', player.x, player.y + 4, 32); // 中心基準で文字を描画
+    Engine.drawText('🚀', player.x, player.y + 4, 32);
   }
 
   if (showDialogue) {
     // 画面中央 (0, -100) を中心としてダイアログを描画
     Engine.drawTextBox(
-      "【連携＆独立アップデート！】\\n・別のファイルで同じ変数名を使ってもエラーにならない！\\n・sendMessage / receiveMessage で連携可能！\\n・スクリプトを追加して試してみてね！\\n※Enterキーで閉じるよ。",
-      0, -100, 600, 180,
+      "【追加アップデート！】\\n・drawTriangle で三角形が描けるようになったよ！\\n・onMouseWheel や Effect.flash など便利機能も追加！\\n※Enterキーで閉じるよ。",
+      0, -100, 600, 150,
       { fontSize: 22, fontColor: '#f8fafc', bgColor: 'rgba(15, 23, 42, 0.85)', borderColor: '#38bdf8', borderWidth: 3, padding: 20 }
     );
     if (Engine.Input.getKeyDown('Enter')) {
       showDialogue = false;
       // 他のスクリプトにメッセージを送る例
-      Engine.sendMessage('addScore', { points: 100 });
+      Engine.sendMessage('addScore', { points: Engine.Math.randomInt(50, 150) }); // 追加機能：ランダムな整数！
     }
   }
 
   // UI (左上に表示。左上は X:-380, Y:260 あたり)
   // drawUIText はカメラを動かしても常に同じ位置に表示されるよ！
-  Engine.drawUIText('Arrow: Move / Click: Warp / Q,E: Zoom', -200, 260, 18, '#94a3b8');
+  Engine.drawUIText('Move: Arrow / Warp: Click / Zoom: MouseWheel', -170, 260, 18, '#94a3b8');
   Engine.drawUIText('Score: ' + score, -320, 220, 24, '#fde047');
-
-  // 新機能：カメラ操作のチート機能！
-  if (Engine.Input.getKey('KeyQ')) Engine.Camera.zoom += 1 * dt;
-  if (Engine.Input.getKey('KeyE')) Engine.Camera.zoom -= 1 * dt;
 });`;
 
     // --- プロジェクト管理 ---
@@ -558,11 +575,9 @@ Engine.setUpdate((dt) => {
           const activeClass = isActive ? 'bg-slate-700 text-white' : 'hover:bg-slate-700/50 text-slate-300';
           const ext = type === 'script' ? '.js' : '';
           
-          // ✨ 追加: 名前変更ボタン
           const renameBtn = `<button onclick="event.stopPropagation(); renameFile('${type}', '${item.id}')" class="text-slate-500 hover:text-sky-400 px-1" title="名前を変更"><i class="fas fa-pen text-xs"></i></button>`;
           const delBtn = (type === 'script' && item.id === 'main') ? '' : `<button onclick="event.stopPropagation(); deleteFile('${type}', '${item.id}')" class="text-slate-500 hover:text-rose-400 px-1"><i class="fas fa-trash-can text-xs"></i></button>`;
           
-          // ✨ 修正: すでに保存されているデータで名前が空っぽの場合でも「unnamed」として表示できるようにしたよ
           const displayName = item.name || 'unnamed';
           
           el.innerHTML += `
@@ -596,14 +611,12 @@ Engine.setUpdate((dt) => {
       } else if (type === 'costume') {
         editorEl.classList.add('hidden'); previewEl.classList.remove('hidden');
         const costume = project.costumes.find(c => c.id === id);
-        // ✨ 修正: 名前が空っぽの画像が選択された時もエラーにならないようにしたよ
         const displayName = costume.name || 'unnamed';
         titleEl.innerHTML = `<i class="fas fa-image text-purple-400 mr-2"></i> ${displayName}`;
         previewEl.innerHTML = `<img src="${costume.src}" alt="${displayName}" class="max-w-xs max-h-[300px] object-contain border-2 border-dashed border-slate-600 p-2 bg-slate-800 rounded">`;
       } else if (type === 'sound') {
         editorEl.classList.add('hidden'); previewEl.classList.remove('hidden');
         const sound = project.sounds.find(s => s.id === id);
-        // ✨ 修正: 名前が空っぽの音声が選択された時もエラーにならないようにしたよ
         const displayName = sound.name || 'unnamed';
         titleEl.innerHTML = `<i class="fas fa-music text-pink-400 mr-2"></i> ${displayName}`;
         previewEl.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg flex flex-col items-center gap-4"><i class="fas fa-volume-high text-5xl text-pink-400 animate-bounce"></i><audio controls src="${sound.src}" class="w-64"></audio></div>`;
@@ -667,11 +680,7 @@ Engine.setUpdate((dt) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const src = event.target.result;
-        
-        // ✨ 修正: 日本語のファイル名も使えるように、致命的な記号だけを消すように優しくしたよ！
         let name = file.name.split('.')[0].replace(/[\\/:\*\?"<>\|]/g, '').trim();
-        
-        // ✨ 修正: もし名前が完全に空っぽになっちゃったら、自動で適当な名前をつけてあげるね
         if (!name) name = uploadTarget + '_' + Math.floor(Date.now() / 1000);
         
         const id = 'asset_' + Date.now();
@@ -715,20 +724,14 @@ Engine.setUpdate((dt) => {
     });
 
     // --- 🎮 エンジンの核となるロジック群 (エディタ & ビルド共通) ---
-    // ここから下の処理は、ビルドされたHTML内でも同様の考え方で動くように設計されています。
 
-    // 座標変換関数: ワールド座標(中心0,0 上+y) -> Canvas座標(左上0,0 下+y)
     const getCanvasPos = (canvas, worldX, worldY) => {
       const dpr = window.devicePixelRatio || 1;
       const w = canvas.width / dpr;
       const h = canvas.height / dpr;
-      return {
-        cx: w / 2 + worldX,
-        cy: h / 2 - worldY
-      };
+      return { cx: w / 2 + worldX, cy: h / 2 - worldY };
     };
 
-    // マウス座標変換関数: Event座標 -> ワールド座標
     const getMouseWorldPos = (canvas, clientX, clientY) => {
       const dpr = window.devicePixelRatio || 1;
       const w = canvas.width / dpr;
@@ -738,13 +741,9 @@ Engine.setUpdate((dt) => {
       const scaleY = h / rect.height;
       const cx = (clientX - rect.left) * scaleX;
       const cy = (clientY - rect.top) * scaleY;
-      return {
-        wx: cx - w / 2,
-        wy: h / 2 - cy
-      };
+      return { wx: cx - w / 2, wy: h / 2 - cy };
     };
 
-    // --- 追加: カメラとシェイク対応の座標変換 ---
     const getCanvasPosCamera = (canvas, worldX, worldY, camera, shakeX, shakeY) => {
       const dpr = window.devicePixelRatio || 1;
       const w = canvas.width / dpr;
@@ -754,6 +753,7 @@ Engine.setUpdate((dt) => {
         cy: h / 2 - (worldY - camera.y) * camera.zoom + shakeY
       };
     };
+
     const getMouseWorldPosCamera = (canvas, clientX, clientY, camera) => {
       const dpr = window.devicePixelRatio || 1;
       const w = canvas.width / dpr;
@@ -769,15 +769,19 @@ Engine.setUpdate((dt) => {
       };
     };
 
-    // エンジンAPIオブジェクトを生成する関数 (実行コンテキスト毎に作るため)
+    // エンジンAPIオブジェクトを生成する関数
     function createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, customLogFn) {
-      // 🌟変更: コールバックを配列化して複数登録可能にする
       let userInits = [];
       let userUpdates = [];
-      let messageListeners = {}; // メッセージ送受信用
-      let activeSounds = []; // 🌟追加: 再生中の音声を管理
+      let messageListeners = {}; 
+      let activeSounds = []; 
 
       let shakePower = 0;
+      // ✨ フラッシュエフェクト用の変数を追加したよ
+      let flashColor = null;
+      let flashTimer = 0;
+      let flashDuration = 1;
+
       let totalTime = 0;
       let frameCount = 0;
       let currentDt = 0;
@@ -795,19 +799,30 @@ Engine.setUpdate((dt) => {
           currentDt = dt; totalTime += dt; frameCount++;
           if(shakePower > 0) { shakePower *= 0.9; if(shakePower < 0.5) shakePower = 0; }
         },
+        // ✨ 追加: エンジンの最後にエフェクトを上乗せして描画する機能だよ
+        _renderEffects: () => {
+          if (flashTimer > 0) {
+            const alpha = Math.max(0, flashTimer / flashDuration);
+            const dpr = window.devicePixelRatio || 1;
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // 画面全体を覆うためリセット
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = flashColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+            flashTimer -= currentDt;
+          }
+        },
 
-        // 🌟変更: 上書きではなく配列に追加する
         setInit: (fn) => { userInits.push(fn); },
         setUpdate: (fn) => { userUpdates.push(fn); },
         onClick: (fn) => { callbacks.onClick.push(fn); },
+        onMouseWheel: (fn) => { callbacks.onMouseWheel.push(fn); }, // ✨ ホイールイベントの登録
         onKeyDown: (fn) => { callbacks.onKeyDown.push(fn); },
         onKeyUp: (fn) => { callbacks.onKeyUp.push(fn); },
         
-        // 🌟新規: メッセージパッシングAPI
         sendMessage: (type, data) => {
-          if (messageListeners[type]) {
-            messageListeners[type].forEach(cb => cb(data));
-          }
+          if (messageListeners[type]) { messageListeners[type].forEach(cb => cb(data)); }
         },
         receiveMessage: (type, cb) => {
           if (!messageListeners[type]) messageListeners[type] = [];
@@ -815,7 +830,15 @@ Engine.setUpdate((dt) => {
         },
 
         Camera: cameraState,
-        Effect: { shake: (power) => { shakePower = power; } },
+        Effect: { 
+          shake: (power) => { shakePower = power; },
+          // ✨ 追加: フラッシュエフェクト
+          flash: (color = '#ffffff', duration = 0.5) => {
+            flashColor = color;
+            flashDuration = duration;
+            flashTimer = duration;
+          }
+        },
         Storage: {
           save: (key, val) => { try { localStorage.setItem('game_save_' + key, JSON.stringify(val)); } catch(e){} },
           load: (key, defVal) => { try { const d = localStorage.getItem('game_save_' + key); return d ? JSON.parse(d) : defVal; } catch(e){ return defVal; } }
@@ -828,35 +851,28 @@ Engine.setUpdate((dt) => {
         
         clear: (color = '#000') => {
           const dpr = window.devicePixelRatio || 1;
+          ctx.save();
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.fillStyle = color;
-          ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
         },
         hasCostume: (name) => !!loadedImages[name],
         hasSound: (name) => !!loadedSounds[name],
         
-        // --- 描画 (中心基準・カメラ対応) ---
         draw: (name, x, y, width, height, angle = 0, options = {}) => {
           const img = loadedImages[name];
           if (!img) return;
 
-          // 🌟オーバーロード対応：角度引数を省略して直接optionsオブジェクトを渡した場合の自動ケア
-          if (typeof angle === 'object' && angle !== null) {
-            options = angle;
-            angle = 0;
-          }
+          if (typeof angle === 'object' && angle !== null) { options = angle; angle = 0; }
 
           const { cx, cy } = applyCamera(x, y);
           ctx.save();
           ctx.translate(cx, cy);
-          // Canvasは時計回りが正だが、デカルト座標では反時計回りが正のためマイナスにする
           ctx.rotate((-angle * Math.PI) / 180);
           
-          // --- 画像効果(エフェクト)の適用 ---
-          if (options && options.alpha !== undefined) {
-            ctx.globalAlpha = options.alpha;
-          } else {
-            ctx.globalAlpha = 1.0;
-          }
+          if (options && options.alpha !== undefined) ctx.globalAlpha = options.alpha;
+          else ctx.globalAlpha = 1.0;
           
           let filters = [];
           if (options) {
@@ -868,19 +884,10 @@ Engine.setUpdate((dt) => {
             if (options.invert !== undefined) filters.push(`invert(${options.invert})`);
             if (options.sepia !== undefined) filters.push(`sepia(${options.sepia})`);
           }
-          
-          if (filters.length > 0) {
-            ctx.filter = filters.join(' ');
-          } else {
-            ctx.filter = 'none';
-          }
+          ctx.filter = filters.length > 0 ? filters.join(' ') : 'none';
 
           ctx.drawImage(img, -(width * cameraState.zoom) / 2, -(height * cameraState.zoom) / 2, width * cameraState.zoom, height * cameraState.zoom);
           ctx.restore();
-          
-          // リセット（念のため）
-          ctx.filter = 'none';
-          ctx.globalAlpha = 1.0;
         },
         drawRect: (x, y, w, h, color = '#fff', fill = true) => {
           const { cx, cy } = applyCamera(x, y);
@@ -894,6 +901,19 @@ Engine.setUpdate((dt) => {
           const { cx, cy } = applyCamera(x, y);
           const cr = r * cameraState.zoom;
           ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+          ctx.fillStyle = color; ctx.strokeStyle = color;
+          if (fill) ctx.fill(); else ctx.stroke();
+        },
+        // ✨ 追加: 三角形の描画APIだよ
+        drawTriangle: (x1, y1, x2, y2, x3, y3, color = '#fff', fill = true) => {
+          const p1 = applyCamera(x1, y1);
+          const p2 = applyCamera(x2, y2);
+          const p3 = applyCamera(x3, y3);
+          ctx.beginPath();
+          ctx.moveTo(p1.cx, p1.cy);
+          ctx.lineTo(p2.cx, p2.cy);
+          ctx.lineTo(p3.cx, p3.cy);
+          ctx.closePath();
           ctx.fillStyle = color; ctx.strokeStyle = color;
           if (fill) ctx.fill(); else ctx.stroke();
         },
@@ -913,7 +933,6 @@ Engine.setUpdate((dt) => {
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(text, cx, cy);
         },
-        // --- UI描画 (カメラ無視) ---
         drawUIText: (text, x, y, size = 20, color = '#fff') => {
           const { cx, cy } = getCanvasPos(canvas, x, y);
           ctx.fillStyle = color; ctx.font = `bold ${size}px "Segoe UI", sans-serif`;
@@ -953,45 +972,26 @@ Engine.setUpdate((dt) => {
             const src = loadedSounds[name];
             if (!src) return;
             const audio = new Audio(src);
-            audio.volume = Math.max(0, Math.min(1, volume)); // 0~1の範囲に優しく制限
+            audio.volume = Math.max(0, Math.min(1, volume));
             audio.loop = loop;
-            
-            // 再生が終わったら管理リストからそっと消してあげる
-            audio.onended = () => {
-              activeSounds = activeSounds.filter(s => s.audio !== audio);
-            };
-
+            audio.onended = () => { activeSounds = activeSounds.filter(s => s.audio !== audio); };
             activeSounds.push({ name, audio });
             audio.play().catch(()=>{});
             return audio;
           },
           stop: (name) => {
-            activeSounds.forEach(s => {
-              if (s.name === name) {
-                s.audio.pause();
-                s.audio.currentTime = 0;
-              }
-            });
+            activeSounds.forEach(s => { if (s.name === name) { s.audio.pause(); s.audio.currentTime = 0; } });
             activeSounds = activeSounds.filter(s => s.name !== name);
           },
           stopAll: () => {
-            activeSounds.forEach(s => {
-              s.audio.pause();
-              s.audio.currentTime = 0;
-            });
+            activeSounds.forEach(s => { s.audio.pause(); s.audio.currentTime = 0; });
             activeSounds = [];
           },
           setVolume: (name, volume) => {
-            activeSounds.forEach(s => {
-              if (s.name === name) {
-                s.audio.volume = Math.max(0, Math.min(1, volume));
-              }
-            });
+            activeSounds.forEach(s => { if (s.name === name) s.audio.volume = Math.max(0, Math.min(1, volume)); });
           }
         },
-        play: (name, volume = 1.0, loop = false) => {
-          Engine.Sound.play(name, volume, loop);
-        },
+        play: (name, volume = 1.0, loop = false) => { Engine.Sound.play(name, volume, loop); },
         Input: {
           getKey: (code) => !!inputState.keys[code],
           getKeyDown: (code) => !!(inputState.keys[code] && !inputState.prevKeys[code]),
@@ -1001,20 +1001,17 @@ Engine.setUpdate((dt) => {
         },
         Math: {
           random: (min, max) => Math.random() * (max - min) + min,
+          // ✨ 追加: 整数をランダムに出してくれる便利機能だよ！
+          randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
           lerp: (a, b, t) => a + (b - a) * t,
           clamp: (val, min, max) => Math.max(min, Math.min(max, val)),
           deg2rad: (deg) => deg * Math.PI / 180, rad2deg: (rad) => rad * 180 / Math.PI,
           moveForward: (x, y, angleDeg, distance) => {
             const rad = angleDeg * Math.PI / 180;
-            // 上が+yなので sin() を足すことで上に進む
             return { x: x + Math.cos(rad) * distance, y: y + Math.sin(rad) * distance };
           },
-          angleBetween: (x1, y1, x2, y2) => {
-            return Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-          },
-          distance: (x1, y1, x2, y2) => {
-            return Math.hypot(x2 - x1, y2 - y1);
-          },
+          angleBetween: (x1, y1, x2, y2) => { return Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI; },
+          distance: (x1, y1, x2, y2) => { return Math.hypot(x2 - x1, y2 - y1); },
           Collision: {
             rectRect: (x1, y1, w1, h1, x2, y2, w2, h2) => {
               return (x1 - w1/2) < (x2 + w2/2) && (x1 + w1/2) > (x2 - w2/2) && 
@@ -1056,10 +1053,12 @@ Engine.setUpdate((dt) => {
         canvas.removeEventListener('mousedown', activeEngineHandlers.mousedown);
         window.removeEventListener('mouseup', activeEngineHandlers.mouseup);
         canvas.removeEventListener('mousemove', activeEngineHandlers.mousemove);
+        // ✨ ホイールのイベントを解除
+        canvas.removeEventListener('wheel', activeEngineHandlers.wheel);
         activeEngineHandlers = null;
       }
       if (activeEngineInstance) {
-        activeEngineInstance.Sound.stopAll(); // 🌟追加: ゲーム停止時にすべての音を止めるよ
+        activeEngineInstance.Sound.stopAll();
         activeEngineInstance = null;
       }
       isRunning = false;
@@ -1074,11 +1073,10 @@ Engine.setUpdate((dt) => {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
 
-      // 高DPI(Retina)対応: キャンバスの解像度を上げる
       const dpr = window.devicePixelRatio || 1;
       canvas.width = 800 * dpr;
       canvas.height = 600 * dpr;
-      ctx.setTransform(1, 0, 0, 1, 0, 0); // リセット
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
 
       const loadedImages = {};
@@ -1092,7 +1090,7 @@ Engine.setUpdate((dt) => {
 
       const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
       const cameraState = { x: 0, y: 0, zoom: 1 };
-      const callbacks = { onClick: [], onKeyDown: [], onKeyUp: [] }; // 🌟配列に変更
+      const callbacks = { onClick: [], onKeyDown: [], onKeyUp: [], onMouseWheel: [] }; // ✨ onMouseWheel追加
 
       const keydownHandler = (e) => { inputState.keys[e.code] = true; if(!inputState.prevKeys[e.code]) callbacks.onKeyDown.forEach(cb => cb(e.code)); };
       const keyupHandler = (e) => { inputState.keys[e.code] = false; callbacks.onKeyUp.forEach(cb => cb(e.code)); };
@@ -1102,19 +1100,24 @@ Engine.setUpdate((dt) => {
         const wp = getMouseWorldPosCamera(canvas, e.clientX, e.clientY, cameraState);
         inputState.mouse.x = wp.wx; inputState.mouse.y = wp.wy;
       };
+      // ✨ マウスホイールのハンドラー
+      const wheelHandler = (e) => {
+        e.preventDefault(); // 画面全体がスクロールしちゃうのを防ぐよ
+        callbacks.onMouseWheel.forEach(cb => cb(e.deltaY));
+      };
 
       window.addEventListener('keydown', keydownHandler);
       window.addEventListener('keyup', keyupHandler);
       canvas.addEventListener('mousedown', mousedownHandler);
-      window.addEventListener('mouseup', mouseupHandler); // Canvas外で離した時のためWindowに設定
+      window.addEventListener('mouseup', mouseupHandler); 
       canvas.addEventListener('mousemove', mousemoveHandler);
+      canvas.addEventListener('wheel', wheelHandler, { passive: false });
 
-      activeEngineHandlers = { keydown: keydownHandler, keyup: keyupHandler, mousedown: mousedownHandler, mouseup: mouseupHandler, mousemove: mousemoveHandler };
+      activeEngineHandlers = { keydown: keydownHandler, keyup: keyupHandler, mousedown: mousedownHandler, mouseup: mouseupHandler, mousemove: mousemoveHandler, wheel: wheelHandler };
 
       const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, (msg) => addLog(msg, 'info'));
-      activeEngineInstance = Engine; // 🌟追加: 音声を止めるためにインスタンスを保存しておくよ
+      activeEngineInstance = Engine;
 
-      // 🌟変更: スクリプトを結合せずに個別に独立して評価（スコープの分離）
       let compileError = false;
       project.scripts.forEach(script => {
         try {
@@ -1127,7 +1130,6 @@ Engine.setUpdate((dt) => {
       });
       if (compileError) { stopGameEngine(); return; }
 
-      // 🌟変更: 複数のスクリプトが登録した初期化関数をすべて実行
       const initFns = Engine._getUserInits();
       try {
         initFns.forEach(fn => fn());
@@ -1149,7 +1151,6 @@ Engine.setUpdate((dt) => {
 
         Engine._updateEngineTime(dt);
 
-        // 🌟変更: 複数のスクリプトが登録した毎フレーム処理をすべて実行
         if (updateFns.length > 0) {
           try {
             updateFns.forEach(fn => fn(dt));
@@ -1158,6 +1159,9 @@ Engine.setUpdate((dt) => {
             stopGameEngine(); return;
           }
         }
+
+        // ✨ ユーザーコードのあとにフラッシュ等のエフェクトを描画するよ
+        Engine._renderEffects();
 
         Object.assign(inputState.prevKeys, inputState.keys);
         inputState.prevMouse.isDown = inputState.mouse.isDown;
@@ -1188,7 +1192,6 @@ Engine.setUpdate((dt) => {
 
       const zip = new JSZip();
 
-      // 画像アセットの抽出と保存 (フラット階層)
       const costumeList = [];
       project.costumes.forEach(costume => {
         const match = costume.src.match(/^data:(image\/[a-zA-Z0-9\-+]+);base64,(.+)$/);
@@ -1200,7 +1203,6 @@ Engine.setUpdate((dt) => {
         }
       });
 
-      // 音声アセットの抽出と保存 (フラット階層)
       const soundList = [];
       project.sounds.forEach(sound => {
         const match = sound.src.match(/^data:(audio\/[a-zA-Z0-9\-+]+);base64,(.+)$/);
@@ -1212,17 +1214,14 @@ Engine.setUpdate((dt) => {
         }
       });
 
-      // スクリプトの抽出と保存 (フラット階層)
       const scriptList = [];
       project.scripts.forEach(script => {
         const fileName = `${script.name}.js`;
-        // 各スクリプトが独立したスコープを持ちつつ、Engineオブジェクトを受け取れるように関数でラップする
         const wrappedContent = `window._registerGameScript(function(Engine) {\n${script.content}\n});`;
         zip.file(fileName, wrappedContent);
         scriptList.push(`./${fileName}`);
       });
 
-      // エンジンロジックの抽出
       const engineCode = `
         const getCanvasPos = ${getCanvasPos.toString()};
         const getMouseWorldPos = ${getMouseWorldPos.toString()};
@@ -1231,7 +1230,6 @@ Engine.setUpdate((dt) => {
         const createEngineAPI = ${createEngineAPI.toString()};
       `;
 
-      // HTMLから各スクリプトを読み込むためのタグを生成
       let scriptTags = scriptList.map(path => `<script src="${path}"><\/script>`).join('\n  ');
 
       const htmlContent = `<!DOCTYPE html>
@@ -1248,7 +1246,7 @@ Engine.setUpdate((dt) => {
       justify-content: center; 
       align-items: center; 
       height: 100vh; 
-      height: 100dvh; /* iOS Safari用 */
+      height: 100dvh; 
       width: 100vw;
       overflow: hidden; 
       touch-action: none; 
@@ -1274,13 +1272,11 @@ Engine.setUpdate((dt) => {
     }
   </style>
   <script>
-    // 外部スクリプトファイルを受け取るための配列と登録関数
     window._gameScripts = [];
     window._registerGameScript = function(fn) {
       window._gameScripts.push(fn);
     };
   <\/script>
-  <!-- 各スクリプトファイルの読み込み -->
   ${scriptTags}
 </head>
 <body>
@@ -1296,7 +1292,6 @@ Engine.setUpdate((dt) => {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
 
-      // 高DPI(Retina)対応
       const dpr = window.devicePixelRatio || 1;
       canvas.width = 800 * dpr;
       canvas.height = 600 * dpr;
@@ -1320,7 +1315,7 @@ Engine.setUpdate((dt) => {
 
       const inputState = { keys: {}, prevKeys: {}, mouse: { x: 0, y: 0, isDown: false }, prevMouse: { isDown: false } };
       const cameraState = { x: 0, y: 0, zoom: 1 };
-      const callbacks = { onClick: [], onKeyDown: [], onKeyUp: [] };
+      const callbacks = { onClick: [], onKeyDown: [], onKeyUp: [], onMouseWheel: [] }; // ✨ ホイール対応
 
       window.addEventListener('keydown', e => { inputState.keys[e.code] = true; if(!inputState.prevKeys[e.code]) callbacks.onKeyDown.forEach(cb => cb(e.code)); });
       window.addEventListener('keyup', e => { inputState.keys[e.code] = false; callbacks.onKeyUp.forEach(cb => cb(e.code)); });
@@ -1330,10 +1325,14 @@ Engine.setUpdate((dt) => {
         const wp = getMouseWorldPosCamera(canvas, e.clientX, e.clientY, cameraState);
         inputState.mouse.x = wp.wx; inputState.mouse.y = wp.wy;
       });
+      // ✨ ホイール操作対応
+      canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        callbacks.onMouseWheel.forEach(cb => cb(e.deltaY));
+      }, { passive: false });
 
       const Engine = createEngineAPI(ctx, canvas, loadedImages, loadedSounds, inputState, cameraState, callbacks, (msg) => console.log("[Game Log]", msg));
 
-      // 読み込まれた各スクリプトにEngineを渡して実行
       let compileError = false;
       window._gameScripts.forEach((runUserCode, idx) => {
         try {
@@ -1357,6 +1356,10 @@ Engine.setUpdate((dt) => {
         if (updateFns.length > 0) {
           try { updateFns.forEach(fn => fn(dt)); } catch (err) { console.error("Update Error:", err); }
         }
+
+        // ✨ 描画の最後にエフェクトを重ねるよ
+        Engine._renderEffects();
+
         Object.assign(inputState.prevKeys, inputState.keys);
         inputState.prevMouse.isDown = inputState.mouse.isDown;
         requestAnimationFrame(loop);
@@ -1366,10 +1369,8 @@ Engine.setUpdate((dt) => {
   <\/script>
 </body>
 </html>`;
-      // 組み立てたHTMLをZIPのルートに追加
       zip.file("index.html", htmlContent);
 
-      // ZIPファイルの生成とダウンロード
       zip.generateAsync({
         type: "blob"
       }).then(function(content) {
@@ -1398,17 +1399,14 @@ Engine.setUpdate((dt) => {
     resizer.addEventListener('mousedown', (e) => {
       isResizing = true;
       document.body.style.cursor = 'col-resize';
-      // Monacoエディタがマウスイベントを奪うのを防ぐ
       monacoContainer.style.pointerEvents = 'none';
       e.preventDefault();
     });
 
     window.addEventListener('mousemove', (e) => {
       if (!isResizing) return;
-      // ウィンドウ全体の幅から、マウスのX座標を引いて右ペインの幅を計算
       let newWidth = window.innerWidth - e.clientX;
       
-      // 最小幅(300px)と最大幅(ウィンドウ幅 - 左ペイン - 中央ペインの最小幅)の制限
       const maxWidth = window.innerWidth - 256 - 300; 
       if (newWidth < 300) newWidth = 300;
       if (newWidth > maxWidth) newWidth = maxWidth;
@@ -1420,7 +1418,7 @@ Engine.setUpdate((dt) => {
       if (isResizing) {
         isResizing = false;
         document.body.style.cursor = 'default';
-        monacoContainer.style.pointerEvents = 'auto'; // Monacoエディタのイベントを元に戻す
+        monacoContainer.style.pointerEvents = 'auto'; 
       }
     });
 
